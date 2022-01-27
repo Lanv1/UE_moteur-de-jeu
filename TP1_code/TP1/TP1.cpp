@@ -41,28 +41,22 @@ float lastFrame = 0.0f;
 float angle = 0.;
 float zoom = 1.;
 
-void generatePlan(std::vector<std::vector<short unsigned int>> triangles, std::vector<glm::vec3> indexed_vertices, int w, int h, vec3 pos) {
+void generateVertices(std::vector<glm::vec3> &indexed_vertices, int w, int h, vec3 pos){
+    float current_x, current_y;
     int res_x = 16;       //16x16 vertices
     int res_y = 16;       //16x16 vertices
     float x_step = (float) w / (float) res_x;
     float y_step = (float) h / (float) res_y;
 
-    float current_x, current_y;
     int array_index;
     vec3 vert;
 
-    int tr_index = 0;
-    std::vector<short unsigned int> triangle1;
-    triangle1.resize(3);
-    std::vector<short unsigned int> triangle2;
-    triangle2.resize(3);
-    
-    for(unsigned short i = 0; i < res_x - 1; i ++){
+    for(unsigned short i = 0; i < res_x; i ++){
         current_x = i * x_step;
 
-        for(unsigned short j = 0; j < res_y - 1; j ++) {
+        for(unsigned short j = 0; j < res_y; j ++) {
 
-            array_index = (i * w + j);
+            array_index = (i * res_y + j);
             current_y = j*y_step;
             
             vert = vec3(current_x, current_y, 0);
@@ -70,30 +64,49 @@ void generatePlan(std::vector<std::vector<short unsigned int>> triangles, std::v
             indexed_vertices.resize(indexed_vertices.size() + 1);
             indexed_vertices[array_index] = vert;
 
-            triangle1 = {array_index, array_index + 1, array_index + w};        
-            triangle2 = {array_index + w, array_index + 1, array_index + 1 + w};
+        }
+    }
+}
+
+void generatePlan(std::vector<std::vector<short unsigned int>> &triangles, std::vector<glm::vec3> &indexed_vertices, int w, int h, vec3 pos) {
+    int res_x = 16;       //16x16 vertices
+    int res_y = 16;       //16x16 vertices
+
+    int array_index;
+
+    int tr_index = 0;
+    std::vector<short unsigned int> triangle1;
+    triangle1.resize(3);
+    std::vector<short unsigned int> triangle2;
+    triangle2.resize(3);
+
+    generateVertices(indexed_vertices, w, h, pos);
+    
+    for(unsigned short i = 0; i < res_x - 1; i ++){
+        for(unsigned short j = 0; j < res_y - 1; j ++) {
+
+            array_index = (i * res_y + j);
             
             triangles.resize(triangles.size() + 2);
             triangles[tr_index].resize(3);
-
             triangles[tr_index][0] = array_index; 
             triangles[tr_index][1] = array_index + 1; 
-            triangles[tr_index][2] = array_index + w; 
+            triangles[tr_index][2] = array_index + res_y; 
             
             triangles[tr_index + 1].resize(3);
-            triangles[tr_index + 1][0] = array_index + w;
+            triangles[tr_index + 1][0] = array_index + res_y;
             triangles[tr_index + 1][1] = array_index + 1;
-            triangles[tr_index + 1][2] = array_index + 1 + w;
+            triangles[tr_index + 1][2] = array_index + 1 + res_y;
 
             tr_index += 2; 
 
-            std::cout<<indexed_vertices.size()<<std::endl;
-            std::cout<<" "<<triangles.size()<<std::endl;
         }
     }
 
 
 }
+
+
 /*******************************************************************************/
 
 int main( void )
@@ -171,18 +184,17 @@ int main( void )
     std::string filename("chair.off");
     loadOFF(filename, indexed_vertices, indices, triangles );
 
-    // Load it into a VBO
+    // // Load it into a VBO
+    // GLuint vertexbuffer;
+    // glGenBuffers(1, &vertexbuffer);
+    // glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    // glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
 
-    GLuint vertexbuffer;
-    glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-
-    // Generate a buffer for the indices as well
-    GLuint elementbuffer;
-    glGenBuffers(1, &elementbuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
+    // // Generate a buffer for the indices as well
+    // GLuint elementbuffer;
+    // glGenBuffers(1, &elementbuffer);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
 
     // Get a handle for our "LightPosition" uniform
     glUseProgram(programID);
@@ -197,13 +209,33 @@ int main( void )
     //PLANE....
     std::vector<std::vector<unsigned short> > triangles_arr;
     std::vector<glm::vec3> indexed_vert;
+    std::vector<unsigned short> soup;
 
     generatePlan(triangles_arr, indexed_vert, 4, 4, vec3(0, 0, 0));
-    for(std::vector<unsigned short> tri : triangles_arr){
-        std::cout<<tri[0]<<", "<<tri[1]<<", "<<tri[2]<<std::endl;
+    soup.resize(3 * triangles_arr.size());
+    int k = 0;
+    for(int i = 0; i < triangles_arr.size(); i ++){
+        soup[k] = triangles_arr[i][0]; 
+        soup[k + 1] = triangles_arr[i][1]; 
+        soup[k + 2] = triangles_arr[i][2]; 
+        k += 3;
     }
 
+    // Load it into a VBO
+    GLuint vertexbuffer;
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, indexed_vert.size() * sizeof(glm::vec3), &indexed_vert[0], GL_STATIC_DRAW);
+
+    // Generate a buffer for the indices as well
+    GLuint elementbuffer;
+    glGenBuffers(1, &elementbuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, soup.size() * sizeof(unsigned short), &soup[0] , GL_STATIC_DRAW);
+
+
     std::cout<<triangles_arr.size()<<std::endl;
+    std::cout<<soup.size()<<std::endl;
 
     do{
 
@@ -273,32 +305,32 @@ int main( void )
                     (void*)0           // element array buffer offset
                     );
 
-        //2nd chair
-        glm::mat4 Model2 =  glm::rotate(Model, glm::radians(180.0f), glm::vec3(0, 1, 0));
-        Model2 = glm::translate(Model2, glm::vec3(-1, 0, 0));
-        mvp = Projection * View * Model2;
-        glUniformMatrix4fv(mvp_handle, 1, GL_FALSE, &mvp[0][0]);
-        glDrawElements(
-                    GL_TRIANGLES,      // mode
-                    indices.size(),    // count
-                    GL_UNSIGNED_SHORT,   // type
-                    (void*)0           // element array buffer offset
-                    );
+        // //2nd chair
+        // glm::mat4 Model2 =  glm::rotate(Model, glm::radians(180.0f), glm::vec3(0, 1, 0));
+        // Model2 = glm::translate(Model2, glm::vec3(-1, 0, 0));
+        // mvp = Projection * View * Model2;
+        // glUniformMatrix4fv(mvp_handle, 1, GL_FALSE, &mvp[0][0]);
+        // glDrawElements(
+        //             GL_TRIANGLES,      // mode
+        //             indices.size(),    // count
+        //             GL_UNSIGNED_SHORT,   // type
+        //             (void*)0           // element array buffer offset
+        //             );
 
-        //3rd chair
-        glm::mat4 Model3 = glm::mat4(1.0f);
-        Model3 = glm::translate(Model3, glm::vec3(0, 1, 0.));
-        Model3 = glm::rotate(Model3, angle, glm::vec3(0, 0, 1));
-        Model3 = glm::translate(Model3, glm::vec3(0, -0.5, 0.));
+        // //3rd chair
+        // glm::mat4 Model3 = glm::mat4(1.0f);
+        // Model3 = glm::translate(Model3, glm::vec3(0, 1, 0.));
+        // Model3 = glm::rotate(Model3, angle, glm::vec3(0, 0, 1));
+        // Model3 = glm::translate(Model3, glm::vec3(0, -0.5, 0.));
 
-        mvp = Projection * View * Model3;
-        glUniformMatrix4fv(mvp_handle, 1, GL_FALSE, &mvp[0][0]);
-        glDrawElements(
-                    GL_TRIANGLES,      // mode
-                    indices.size(),    // count
-                    GL_UNSIGNED_SHORT,   // type
-                    (void*)0           // element array buffer offset
-                    );
+        // mvp = Projection * View * Model3;
+        // glUniformMatrix4fv(mvp_handle, 1, GL_FALSE, &mvp[0][0]);
+        // glDrawElements(
+        //             GL_TRIANGLES,      // mode
+        //             indices.size(),    // count
+        //             GL_UNSIGNED_SHORT,   // type
+        //             (void*)0           // element array buffer offset
+        //             );
 
         glDisableVertexAttribArray(0);
 
@@ -340,18 +372,18 @@ void processInput(GLFWwindow *window)
     //TODO add translations
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
 
-        camera_position -= glm::vec3(0, cameraSpeed, 0);
+        camera_position += glm::vec3(0, cameraSpeed, 0);
     }
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
 
-        camera_position += glm::vec3(0, cameraSpeed, 0);
+        camera_position -= glm::vec3(0, cameraSpeed, 0);
     }
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
 
-        camera_position += glm::vec3(cameraSpeed, 0, 0) ;
+        camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
     }
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
-        camera_position -= glm::vec3(cameraSpeed, 0, 0);
+        camera_position += glm::vec3(cameraSpeed, 0, 0);
 
     }
 
