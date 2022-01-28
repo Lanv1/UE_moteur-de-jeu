@@ -73,12 +73,7 @@ void generatePlan(std::vector<std::vector<short unsigned int>> &triangles, std::
     int res_y = 16;       //16x16 vertices
 
     int array_index;
-
     int tr_index = 0;
-    std::vector<short unsigned int> triangle1;
-    triangle1.resize(3);
-    std::vector<short unsigned int> triangle2;
-    triangle2.resize(3);
 
     generateVertices(indexed_vertices, w, h, pos);
     

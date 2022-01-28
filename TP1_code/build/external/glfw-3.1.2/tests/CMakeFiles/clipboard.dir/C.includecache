@@ -62,17 +62,17 @@ GL/glext.h
 GL/glu.h
 -
 
-/home/spon/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/deps/getopt.c
+/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/deps/getopt.c
 getopt.h
-/home/spon/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/deps/getopt.h
+/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/deps/getopt.h
 stddef.h
 -
 string.h
 -
 
-/home/spon/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/deps/getopt.h
+/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/deps/getopt.h
 
-/home/spon/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/tests/clipboard.c
+/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/tests/clipboard.c
 GLFW/glfw3.h
 -
 stdio.h
@@ -80,5 +80,5 @@ stdio.h
 stdlib.h
 -
 getopt.h
-/home/spon/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/tests/getopt.h
+/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/tests/getopt.h
 
