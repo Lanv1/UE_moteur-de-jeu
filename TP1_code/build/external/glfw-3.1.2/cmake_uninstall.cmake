@@ -1,9 +1,9 @@
 
-if (NOT EXISTS "/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/build/external/glfw-3.1.2/install_manifest.txt")
-  message(FATAL_ERROR "Cannot find install manifest: \"/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/build/external/glfw-3.1.2/install_manifest.txt\"")
+if (NOT EXISTS "/home/spon/M1/S2/hai819i-moteur/TP1_code/build/external/glfw-3.1.2/install_manifest.txt")
+  message(FATAL_ERROR "Cannot find install manifest: \"/home/spon/M1/S2/hai819i-moteur/TP1_code/build/external/glfw-3.1.2/install_manifest.txt\"")
 endif()
 
-file(READ "/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/build/external/glfw-3.1.2/install_manifest.txt" files)
+file(READ "/home/spon/M1/S2/hai819i-moteur/TP1_code/build/external/glfw-3.1.2/install_manifest.txt" files)
 string(REGEX REPLACE "\n" ";" files "${files}")
 
 foreach (file ${files})

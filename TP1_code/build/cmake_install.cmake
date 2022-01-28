@@ -1,4 +1,4 @@
-# Install script for directory: /home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code
+# Install script for directory: /home/spon/M1/S2/hai819i-moteur/TP1_code
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/build/external/cmake_install.cmake")
+  include("/home/spon/M1/S2/hai819i-moteur/TP1_code/build/external/cmake_install.cmake")
 
 endif()
 
@@ -51,5 +51,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/spon/M1/S2/hai819i-moteur/TP1_code/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

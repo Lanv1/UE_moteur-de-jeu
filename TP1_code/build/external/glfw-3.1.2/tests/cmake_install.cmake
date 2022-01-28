@@ -1,4 +1,4 @@
-# Install script for directory: /home/e20180002341/Bureau/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/tests
+# Install script for directory: /home/spon/M1/S2/hai819i-moteur/TP1_code/external/glfw-3.1.2/tests
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
