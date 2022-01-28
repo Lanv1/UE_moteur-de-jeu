@@ -21,6 +21,7 @@ using namespace glm;
 #include <common/shader.hpp>
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
+#include <common/texture.hpp>
 
 void processInput(GLFWwindow *window);
 
@@ -41,7 +42,7 @@ float lastFrame = 0.0f;
 float angle = 0.;
 float zoom = 1.;
 
-void generateVertices(std::vector<glm::vec3> &indexed_vertices, int w, int h, vec3 pos){
+void generateVertices(std::vector<glm::vec3> &indexed_vertices, std::vector<glm::vec2> &uv, int w, int h, vec3 pos){
     float current_x, current_y;
     int res_x = 16;       //16x16 vertices
     int res_y = 16;       //16x16 vertices
@@ -58,9 +59,12 @@ void generateVertices(std::vector<glm::vec3> &indexed_vertices, int w, int h, ve
 
             array_index = (i * res_y + j);
             current_y = j*y_step;
-            
+
             vert = vec3(current_x, current_y, 0);
 
+            uv.resize(uv.size() + 1);
+            uv[array_index] = vec2((float) i/ (float) res_x, (float) j/ (float)res_y);
+            
             indexed_vertices.resize(indexed_vertices.size() + 1);
             indexed_vertices[array_index] = vert;
 
@@ -68,14 +72,14 @@ void generateVertices(std::vector<glm::vec3> &indexed_vertices, int w, int h, ve
     }
 }
 
-void generatePlan(std::vector<std::vector<short unsigned int>> &triangles, std::vector<glm::vec3> &indexed_vertices, int w, int h, vec3 pos) {
+void generatePlan(std::vector<std::vector<short unsigned int>> &triangles, std::vector<glm::vec3> &indexed_vertices, std::vector<glm::vec2> &uv, int w, int h, vec3 pos) {
     int res_x = 16;       //16x16 vertices
     int res_y = 16;       //16x16 vertices
 
     int array_index;
     int tr_index = 0;
 
-    generateVertices(indexed_vertices, w, h, pos);
+    generateVertices(indexed_vertices, uv, w, h, pos);
     
     for(unsigned short i = 0; i < res_x - 1; i ++){
         for(unsigned short j = 0; j < res_y - 1; j ++) {
@@ -179,6 +183,7 @@ int main( void )
     std::string filename("chair.off");
     loadOFF(filename, indexed_vertices, indices, triangles );
 
+    GLuint texture = loadBMP_custom("../tex.bmp");
     // // Load it into a VBO
     // GLuint vertexbuffer;
     // glGenBuffers(1, &vertexbuffer);
@@ -204,9 +209,11 @@ int main( void )
     //PLANE....
     std::vector<std::vector<unsigned short> > triangles_arr;
     std::vector<glm::vec3> indexed_vert;
+    std::vector<glm::vec2> vert_uv;
     std::vector<unsigned short> soup;
 
-    generatePlan(triangles_arr, indexed_vert, 4, 4, vec3(0, 0, 0));
+    generatePlan(triangles_arr, indexed_vert, vert_uv, 4, 4, vec3(0, 0, 0));
+
     soup.resize(3 * triangles_arr.size());
     int k = 0;
     for(int i = 0; i < triangles_arr.size(); i ++){
@@ -214,6 +221,10 @@ int main( void )
         soup[k + 1] = triangles_arr[i][1]; 
         soup[k + 2] = triangles_arr[i][2]; 
         k += 3;
+    }
+
+    for(vec2 uv : vert_uv){
+        std::cout<<uv[0]<<", "<<uv[1]<<std::endl;
     }
 
     // Load it into a VBO
@@ -228,6 +239,11 @@ int main( void )
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, soup.size() * sizeof(unsigned short), &soup[0] , GL_STATIC_DRAW);
 
+    // Generate a buffer for UVs
+    GLuint uvbuffer;
+    glGenBuffers(1, &uvbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glBufferData(GL_ARRAY_BUFFER, vert_uv.size() * sizeof(glm::vec2), &vert_uv[0], GL_STATIC_DRAW);
 
     std::cout<<triangles_arr.size()<<std::endl;
     std::cout<<soup.size()<<std::endl;
@@ -289,13 +305,25 @@ int main( void )
                     (void*)0            // array buffer offset
                     );
 
+        // UVs buffer                   // only for PLANE
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+        glVertexAttribPointer(
+                1,                  // attribute
+                2,                  // size
+                GL_FLOAT,           // type
+                GL_FALSE,           // normalized?
+                0,                  // stride
+                (void*)0            // array buffer offset
+        );
+
         // Index buffer
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 
         // Draw the triangles !
         glDrawElements(
                     GL_TRIANGLES,      // mode
-                    indices.size(),    // count
+                    soup.size(),    // count            // SOUP for plane, INDICES for chairs
                     GL_UNSIGNED_SHORT,   // type
                     (void*)0           // element array buffer offset
                     );
@@ -328,6 +356,7 @@ int main( void )
         //             );
 
         glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
 
         // Swap buffers
         glfwSwapBuffers(window);
@@ -340,6 +369,7 @@ int main( void )
     // Cleanup VBO and shader
     glDeleteBuffers(1, &vertexbuffer);
     glDeleteBuffers(1, &elementbuffer);
+    glDeleteBuffers(1, &uvbuffer);
     glDeleteProgram(programID);
     glDeleteVertexArrays(1, &VertexArrayID);
 
