@@ -2,16 +2,6 @@
 
 ## Usage
 
-### Project setup
-
-> ./reset_dir.sh (supprime l'ancien dossier build et le reconstruit)
->
-> cd build; make -j
->
-> ./launch-TP1.sh
-
-### Raccourcis
-
 > Z, S : zoom/unzom.
 
 > &#8592;, &#8593;, &#8594;, &#8595; :  translation de la caméra.
