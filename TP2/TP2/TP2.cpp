@@ -207,14 +207,18 @@ int main( void )
     // GLuint texture = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp");
     // GLuint height_map0 = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp");
     int height0_loc = glGetUniformLocation(programID, "height0");
-    int tex0_loc = glGetUniformLocation(programID, "tex0");
-    int height1_loc = glGetUniformLocation(programID, "height1");
-    // int tex0_loc = glGetUniformLocation(programID, "tex1");
+    int grass_loc = glGetUniformLocation(programID, "grass_texture");
+    int rock_loc = glGetUniformLocation(programID, "rock_texture");
+    int snowRock_loc = glGetUniformLocation(programID, "snowRock_texture");
 
     glUseProgram(programID);
-    // GLuint height_map1 = loadBMP_custom("../heightMap/Heightmap_Rocky.bmp", 0, height0_loc);
-    GLuint height_map0 = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp", 0, height0_loc);
-    GLuint tex0 = loadBMP_custom("../texture/grass.bmp", 1, tex0_loc);
+    // GLuint height_map1 = loadBMP_custom("../heightMap/.bmp", 0, height0_loc);
+    // GLuint height_map0 = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp", 0, height0_loc);
+    // GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Rocky.bmp", 0, height0_loc);
+    GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Mountain.bmp", 0, height0_loc);
+    GLuint tex0 = loadBMP_custom("../texture/grass.bmp", 1, grass_loc);
+    GLuint tex1 = loadBMP_custom("../texture/rock.bmp", 2, rock_loc);
+    GLuint tex2 = loadBMP_custom("../texture/snowrocks.bmp", 3, snowRock_loc);
 
     
     generatePlan(triangles, indexed_vertices, vert_uv, 4, 4, vec3(0, 0, 0), resolution);
