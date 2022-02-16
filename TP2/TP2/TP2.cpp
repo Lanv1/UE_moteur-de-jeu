@@ -40,7 +40,8 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 //rotation
-float angle = 0.;
+float angle = 1.;
+float rota_speed = 1;
 float zoom = 1.;
 
 //res
@@ -327,18 +328,23 @@ int main( void )
         
         // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
         glm::mat4 View = glm::lookAt( camera_position, camera_target + camera_position, camera_up);
+        View = glm::rotate(View, (float)45., vec3(1., 0., 0.));
         
         // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
+
         // Send our transformation to the currently bound shader,
         // in the "Model View Projection" to the shader uniforms
+        Model = glm::rotate(Model, (float)-90, vec3(1., 0., 0));
+        // Model =  glm::translate(Model, vec3(-2, -2, 0));
 
 
-        // Model =  glm::translate(Model, vec3(2, 2, 0));
-        Model = glm::rotate(Model, angle, vec3(0., 1., 1));
-        Model =  glm::translate(Model, vec3(-2, -2, 0));
+        Model = glm::rotate(Model, angle, vec3(0., 0., 1.));
+        Model =  glm::translate(Model, vec3(-2, -2, -0.5));
+
         glm::mat4 mvp = Projection * View * Model;
         glUniformMatrix4fv(mvp_handle, 1, GL_FALSE, &mvp[0][0]);
+        angle += deltaTime*rota_speed;
         
 
         
@@ -424,20 +430,16 @@ void processInput(GLFWwindow *window)
 
     //TODO add translations
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
-
-        camera_position += glm::vec3(0, cameraSpeed, 0);
+        rota_speed += 0.01;
     }
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
-
-        camera_position -= glm::vec3(0, cameraSpeed, 0);
+        rota_speed = (rota_speed - 0.01) < 0?rota_speed: rota_speed- 0.01;
     }
-    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
-
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
         camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
     }
-    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
         camera_position += glm::vec3(cameraSpeed, 0, 0);
-
     }
     if(glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS){
         updateMesh = true;
@@ -450,8 +452,6 @@ void processInput(GLFWwindow *window)
     
 
     //Big chair rotation
-    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-        angle += cameraSpeed;
 
     
 }
