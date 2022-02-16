@@ -43,11 +43,13 @@ float lastFrame = 0.0f;
 float angle = 1.;
 float rota_speed = 1;
 float zoom = 1.;
+vec3 orbital_axis;
 
 //res
 int resolution = 16;
 
 bool updateMesh = false;
+bool orbital = false;
 
 
 
@@ -215,8 +217,8 @@ int main( void )
     glUseProgram(programID);
     // GLuint height_map1 = loadBMP_custom("../heightMap/.bmp", 0, height0_loc);
     // GLuint height_map0 = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp", 0, height0_loc);
-    // GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Rocky.bmp", 0, height0_loc);
-    GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Mountain.bmp", 0, height0_loc);
+    GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Rocky.bmp", 0, height0_loc);
+    // GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Mountain.bmp", 0, height0_loc);
     GLuint tex0 = loadBMP_custom("../texture/grass.bmp", 1, grass_loc);
     GLuint tex1 = loadBMP_custom("../texture/rock.bmp", 2, rock_loc);
     GLuint tex2 = loadBMP_custom("../texture/snowrocks.bmp", 3, snowRock_loc);
@@ -325,10 +327,20 @@ int main( void )
         glm::mat4 Model = glm::mat4(1.0f);
         
         Model =  glm::scale(Model, glm::vec3(0.5f, 0.5f, 0.5f));
-        
+
+        glm::mat4 View;
         // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
-        glm::mat4 View = glm::lookAt( camera_position, camera_target + camera_position, camera_up);
-        View = glm::rotate(View, (float)45., vec3(1., 0., 0.));
+        View = glm::lookAt( camera_position, camera_target + camera_position, camera_up);
+        if(orbital){
+            View = glm::translate(View, camera_target);
+            View = glm::rotate(View, (float)zoom, orbital_axis);
+            View = glm::translate(View, vec3(0, 0, 1));
+        }else {
+
+            View = glm::rotate(View, (float)45., vec3(1., 0., 0.));
+        }
+        
+
         
         // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
@@ -423,11 +435,11 @@ void processInput(GLFWwindow *window)
 
     //Camera zoom in and out
     float cameraSpeed = 2.5 * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera_position += cameraSpeed * camera_target;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera_position -= cameraSpeed * camera_target;
 
+    if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS){
+        orbital = !orbital;
+        std::cout<<"ORBITAL: "<<orbital<<std::endl;
+    }
     //TODO add translations
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
         rota_speed += 0.01;
@@ -435,11 +447,50 @@ void processInput(GLFWwindow *window)
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
         rota_speed = (rota_speed - 0.01) < 0?rota_speed: rota_speed- 0.01;
     }
+
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
+        if(orbital){
+            zoom += 0.1;
+            orbital_axis = vec3(1, 0, 0);
+            // cos(z) sin(y)
+            // camera_position += vec3(0., sin(cameraSpeed), cos(cameraSpeed)) + camera_target;
+            
+        }else {
+
+            camera_position += cameraSpeed * camera_target;
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+        if(orbital){
+            zoom -= 0.1;
+            orbital_axis = vec3(1, 0, 0);
+
+        }else{
+            camera_position -= cameraSpeed * camera_target;
+
+        }
+
+    }
+
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-        camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
+        if(orbital){
+            zoom += 0.1;
+            orbital_axis = vec3(0., 1, 0);
+
+        }else{
+
+            camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
+        }
     }
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-        camera_position += glm::vec3(cameraSpeed, 0, 0);
+        if(orbital){
+            zoom -= 0.1;
+            orbital_axis = vec3(0, 1, 0);
+        }else{
+            camera_position += glm::vec3(cameraSpeed, 0, 0);
+
+        }
     }
     if(glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS){
         updateMesh = true;

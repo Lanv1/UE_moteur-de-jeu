@@ -1,21 +1,28 @@
-# TP1 Moteur de Jeux
+# TP2 Moteur de Jeux
 
 ## Usage
 
-> Z, S : zoom/unzom.
+> Z,Q,S,D : Déplacement caméra.
+> 	caméra libre: avancer, gauche, reculer, droite.
+> 	caméra orbitale: déplacements sur le cercle dans le plan $yz$ ou $xy$.
+>
+> &#8593;, &#8595; :  Contrôle de la vitesse de rotation de la map.
+>
+> +, - : Augmenter/Diminuer la résolution du terrain. 
+>
+> c : Changer le mode de la caméra (orbital ou caméra libre).
 
-> &#8592;, &#8593;, &#8594;, &#8595; :  translation de la caméra.
 
-> R : rotation de la 3 ème chaise ou du plan texturé.
 
->**ligne 47 TP1.cpp** ``bool scene_1 = false;
->`` :  modifier à **true** pour afficher le plan texturé.
+## Aperçu de la scène
 
-## Aperçu des scènes
+|                      Heightmap_Mountain                      |                       Heightmap_Rocky                        |                     heightmap-1024x1024                      |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| ![](/home/spon/M1/S2/hai819i-moteur/TP2/screens/Capture d’écran de 2022-02-16 17-31-51.png) | ![](/home/spon/M1/S2/hai819i-moteur/TP2/screens/Capture d’écran de 2022-02-16 17-29-59.png) | ![](/home/spon/M1/S2/hai819i-moteur/TP2/screens/Capture d’écran de 2022-02-16 17-31-15.png) |
 
-| <img src="./screens/Chairs_1.png" style="zoom:33%;"/> | <img src="./screens/plane_1.png" style="zoom:33%;" /> |
-| ----------------------------------------------------- | ----------------------------------------------------- |
-| <img src="./screens/plane_2.png" style="zoom:33%;" /> | <img src="./screens/plane_3.png" style="zoom:33%;" /> |
+
+
+
 
 
 
