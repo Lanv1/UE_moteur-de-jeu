@@ -330,14 +330,13 @@ int main( void )
 
         glm::mat4 View;
         // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
-        View = glm::lookAt( camera_position, camera_target + camera_position, camera_up);
         if(orbital){
             View = glm::translate(View, camera_target);
             View = glm::rotate(View, (float)zoom, orbital_axis);
-            View = glm::translate(View, vec3(0, 0, 1));
         }else {
 
             View = glm::rotate(View, (float)45., vec3(1., 0., 0.));
+            View = glm::lookAt( camera_position, camera_target + camera_position, camera_up);
         }
         
 
