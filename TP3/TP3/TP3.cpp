@@ -10,7 +10,6 @@
 
 // Include GLFW
 #include <GLFW/glfw3.h>
-GLFWwindow* window;
 
 // Include GLM
 #include <glm/glm.hpp>
@@ -26,6 +25,7 @@ using namespace glm;
 #include <common/Entity.hpp>
 #include <common/Mesh.hpp>
 
+GLFWwindow* window;
 void processInput(GLFWwindow *window);
 
 // settings
@@ -53,7 +53,24 @@ int resolution = 16;
 bool updateMesh = false;
 bool orbital = false;
 
+float transl =0;
 
+void initBuffers(std::vector<unsigned short> indices, std::vector<glm::vec3> vertices, std::vector<glm::vec2> uvs, GLuint& vertexbuffer, GLuint& elementbuffer, GLuint& uvbuffer){
+    // Generate a buffer for UVs
+    glGenBuffers(1, &uvbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
+    
+    // Load vertices into a VBO
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+
+    // Generate a buffer for the indices as well
+    glGenBuffers(1, &elementbuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
+}
 
 void generateVertices(std::vector<glm::vec3> &indexed_vertices, std::vector<glm::vec2> &uv, int w, int h, vec3 pos, int res){
     float current_x, current_y;
@@ -197,17 +214,21 @@ int main( void )
     GLuint programID = LoadShaders( "vertex_shader.glsl", "fragment_shader.glsl" );
 
     // Get a handle for our "Model View Projection" matrices uniforms
-    GLuint mvp_handle = glGetUniformLocation(programID, "mvp");
-
-    //UV buffer
-    GLuint uvbuffer;
-
+    GLuint model_handle = glGetUniformLocation(programID, "model");
+    GLuint view_handle = glGetUniformLocation(programID, "view");
+    GLuint projection_handle = glGetUniformLocation(programID, "projection");
 
     /****************************************/
+    //ROOT plane
     std::vector<unsigned short> indices; //Triangles concaténés dans une liste
     std::vector<std::vector<unsigned short> > triangles;
     std::vector<glm::vec3> indexed_vertices;
     std::vector<glm::vec2> vert_uv;
+    //CHILD plane
+    std::vector<unsigned short> indices_ch; //Triangles concaténés dans une liste
+    std::vector<std::vector<unsigned short> > triangles_ch;
+    std::vector<glm::vec3> indexed_vertices_ch;
+    std::vector<glm::vec2> vert_uv_ch;
 
     // HEIGHTMAPS/TEXTURES
     // GLuint texture = loadBMP_custom("../texture/tex.bmp");
@@ -229,36 +250,43 @@ int main( void )
 
     
     generatePlan(triangles, indexed_vertices, vert_uv, 4, 4, vec3(0, 0, 0), resolution);
+    // generatePlan(triangles_ch, indexed_vertices_ch, vert_uv_ch, 2, 2, vec3(0, 0, 0), resolution);
     // randomizeHeight(indexed_vertices, 10);
 
-    Entity ent1;
+    //ROOT ENTITY
+    Entity root;
+    Transform tr;
+
+    Transform tr_ch1;
+    Entity child_1;
     Mesh plane(indexed_vertices, triangles);
-    ent1.addMesh(plane);
-    // ent.addMesh(Mesh(indexed_vertices, triangles));
+    root.addMesh(plane);
+    root.addTransformation(tr_ch1);
+    tr_ch1.computeModelMatrix();
+
+    Entity child_2;
+    Mesh ch_plane(indexed_vertices_ch, triangles_ch);
+    child_2.addMesh(ch_plane);
+    Transform tr_ch;
+    child_2.addTransformation(tr_ch);
+
+    child_1.addChild(child_2);
 
     indices.resize(3 * triangles.size());
     indices = plane.getIndices();
 
+    indices_ch.resize(3 * triangles.size());
+    indices_ch = ch_plane.getIndices();
+
 
     // Get a handle for our "LightPosition" uniform
     GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
-
-    // Generate a buffer for UVs
-    glGenBuffers(1, &uvbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-    glBufferData(GL_ARRAY_BUFFER, vert_uv.size() * sizeof(glm::vec2), &vert_uv[0], GL_STATIC_DRAW);
-    
-    // Load vertices into a VBO
     GLuint vertexbuffer;
-    glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-
-    // Generate a buffer for the indices as well
     GLuint elementbuffer;
-    glGenBuffers(1, &elementbuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
+    GLuint uvbuffer;
+    GLuint vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch;
+    initBuffers(indices, indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
+    initBuffers(indices_ch, indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
 
 
     std::cout<<triangles.size()<<std::endl;
@@ -271,35 +299,6 @@ int main( void )
 
     do{
         
-        if(updateMesh){
-            generatePlan(triangles, indexed_vertices, vert_uv, 4, 4, vec3(0., 0., 0.), resolution);
-            indices.clear();
-            indices.resize(3 * triangles.size());
-            
-            int k = 0;
-            for(int i = 0; i < triangles.size(); i ++){
-                indices[k] = triangles[i][0]; 
-                indices[k + 1] = triangles[i][1]; 
-                indices[k + 2] = triangles[i][2]; 
-                k += 3;
-            }
-
-            std::cout<<triangles.size()<<std::endl;
-            std::cout<<indices.size()<<std::endl;
-            
-            updateMesh = false;
-
-            glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-            glBufferData(GL_ARRAY_BUFFER, vert_uv.size() * sizeof(glm::vec2), &vert_uv[0], GL_STATIC_DRAW);
-            
-            // update mesh VBOs
-            glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-            glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
-
-        }
         // Measure speed
         // per-frame time logic
         // --------------------
@@ -318,59 +317,53 @@ int main( void )
         // Use our shader
         glUseProgram(programID);
 
-
-        // Model matrix : an identity matrix (model will be at the origin) then change
-        glm::mat4 Model = glm::mat4(1.0f);
         
-        Model =  glm::scale(Model, glm::vec3(0.5f, 0.5f, 0.5f));
+        // Model matrix : an identity matrix (model will be at the origin) then change
+        // glm::mat4 Model = glm::mat4(1.0f);
 
         glm::mat4 View;
         // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
         View = glm::lookAt( camera_position, camera_target + camera_position, camera_up);
-        if(orbital){
-            View = glm::translate(View, camera_target);
-            View = glm::rotate(View, (float)zoom, orbital_axis);
-            View = glm::translate(View, vec3(0, 0, 1));
-        }else {
-
-            View = glm::rotate(View, (float)45., vec3(1., 0., 0.));
-        }
-        
-
+        // View = glm::rotate(View, (float)45., vec3(1., 0., 0.));
         
         // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
-
-        // Send our transformation to the currently bound shader,
-        // in the "Model View Projection" to the shader uniforms
-        Model = glm::rotate(Model, (float)-90, vec3(1., 0., 0));
-        // Model =  glm::translate(Model, vec3(-2, -2, 0));
-
-
-        Model = glm::rotate(Model, angle, vec3(0., 0., 1.));
-        Model =  glm::translate(Model, vec3(-2, -2, -0.5));
-
-        glm::mat4 mvp = Projection * View * Model;
-        glUniformMatrix4fv(mvp_handle, 1, GL_FALSE, &mvp[0][0]);
-        angle += deltaTime*rota_speed;
         
+        //PROJECTION et VIEW ne changent pas (caméra)
+        glUniformMatrix4fv(projection_handle, 1, GL_FALSE, &Projection[0][0]);
+        glUniformMatrix4fv(view_handle, 1, GL_FALSE, &View[0][0]);
 
-        
-        /****************************************/
 
+        // Transform* c1_tr = child_1.getTransform();
+        Transform* root_tr = root.getTransform();
+        // root_tr->translate(vec3(-1, -1, 0));
+        // root_tr->setRotation(angle, vec3(0., 1., 0.));
+        root_tr->setLocalPosition(vec3(-1, -1, 0.));
+        // c1_tr->setLocalPosition(vec3(-1, -1, 0.));
+        // root_tr->setRotation(angle, 2);
+        glm::mat4 Model = root.getTransform()->getLocalModelMatrix();
+        root.updateSelfAndChild();
+
+        glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
+
+        // Model =  glm::translate(Model, vec3(0., -0., transl));
+
+        // root.getTransform().setLocalPosition(vec3(0., 0., 3));
+        // glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
+        angle += 2;
 
 
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
         glVertexAttribPointer(
-                    0,                  // attribute
-                    3,                  // size
-                    GL_FLOAT,           // type
-                    GL_FALSE,           // normalized?
-                    0,                  // stride
-                    (void*)0            // array buffer offset
-                    );
+                0,                  // attribute
+                3,                  // size
+                GL_FLOAT,           // type
+                GL_FALSE,           // normalized?
+                0,                  // stride
+                (void*)0            // array buffer offset
+        );
 
 
         // UVs buffer                   // only for PLANE
@@ -386,19 +379,24 @@ int main( void )
         );
         
 
-        // Index buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-
         // Draw the triangles !
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
         glDrawElements(
-                    GL_TRIANGLES,      // mode
-                    indices.size(),    // count            // SOUP for plane, INDICES for chairs
-                    GL_UNSIGNED_SHORT,   // type
-                    (void*)0           // element array buffer offset
-                    );
+                GL_TRIANGLES,      // mode
+                indices.size(),    // count            // SOUP for plane, INDICES for chairs
+                GL_UNSIGNED_SHORT,   // type
+                (void*)0           // element array buffer offset
+        );
 
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
+
+
+        
+        /****************************************/
+
+
+
 
         // Swap buffers
         glfwSwapBuffers(window);
@@ -438,7 +436,7 @@ void processInput(GLFWwindow *window)
     }
     //TODO add translations
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
-        rota_speed += 0.01;
+        rota_speed += 0.1;
     }
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
         rota_speed = (rota_speed - 0.01) < 0?rota_speed: rota_speed- 0.01;
@@ -488,14 +486,12 @@ void processInput(GLFWwindow *window)
 
         }
     }
-    if(glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS){
-        updateMesh = true;
-        resolution = resolution-1 > 4? resolution-1: 4;
+    if(glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS){
+        transl += 0.0001;
+        updateMesh =true;
+        
     }
-    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS) {
-        updateMesh = true;
-        resolution = resolution+1 < 240? resolution+1: 240;
-    }
+
     
 
     //Big chair rotation

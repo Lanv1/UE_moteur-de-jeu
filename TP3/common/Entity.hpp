@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <vector>
 #include <iostream>
 #include "Mesh.hpp"
 
@@ -50,22 +51,42 @@ struct Transform {
     }
 
     void setLocalPosition(const glm::vec3& newPosition){
-    
         pos = newPosition;
         m_isDirty = true;
     }
 
+    void setRotation(float angle, const glm::vec3 axis){
+       modelMatrix = glm::rotate(modelMatrix, angle, axis); 
+
+    }
+    void setRotation(float angle, int axis){
+        rot[axis] = angle;
+    }
+    
+
+
 };
 
 class Entity {
-    Transform transform;
-    Mesh entity_mesh;
-    
+    protected:
+
+        Transform transform;
+        Mesh entity_mesh;
+
+        Entity* parent = nullptr;
+
     public:
+        std::vector<Entity> children;
         
         Entity();
         
         void addMesh(Mesh m);
         void addTransformation(Transform t);
+
+        Transform* getTransform();
+
+        void addChild(Entity child);
+
+        void updateSelfAndChild();
 };
 #endif
