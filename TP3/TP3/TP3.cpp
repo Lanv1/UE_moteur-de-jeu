@@ -293,12 +293,12 @@ int main( void )
 
 
     root.transform.setLocalPosition(vec3(-2, -2, 0));
-    root.transform.scale = glm::vec3(2, 2, 2);
+    // root.transform.scale = glm::vec3(2, 2, 2);
     root.updateSelfAndChild();
 
     ch_1.transform.printModelMatrix();
-    ch_1.transform.setLocalRotation(vec3(0, -90, 0));
-    ch_1.transform.setLocalPosition(vec3(-2, 0, 0));
+    ch_1.transform.setLocalPosition(vec3(-2, 2, 0));
+    // ch_1.transform.setLocalRotation(vec3(0, -90, 0));
     ch_1.updateSelfAndChild();
 
     ch_1.transform.printModelMatrix();
@@ -348,17 +348,39 @@ int main( void )
 
 
         //VARIABLE PART
+        // root.transform.setLocalRotation(vec3(0, angle, 0));
+        // root.updateSelfAndChild();
         glm::mat4 Model = root.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         plane.loadToGpu(programID);
         plane.draw();   // DESSIN DU PREMIER MESH
 
-        ch_1.transform.setLocalRotation(vec3(0, angle, 0));
-        ch_1.transform.setLocalPosition(vec3(4, 0, 0));
-        ch_1.updateSelfAndChild();
+        glm::mat4 temp_Model = ch_1.transform.modelMatrix;
+        glm::mat4 rotate_around_matrix(1.0f);
+        rotate_around_matrix = glm::translate(rotate_around_matrix, vec3(2, 0, 0));
+        rotate_around_matrix = glm::rotate(rotate_around_matrix,(float)  angle/60, vec3(0, 1, 0));
+        rotate_around_matrix = glm::translate(rotate_around_matrix, vec3(-2, 0, 0));
+
+        temp_Model *= rotate_around_matrix;
+        ch_1.transform.computeModelMatrix(rotate_around_matrix);
+        // std::cout<<"GLOBAL TRANSFORMATION"<<std::endl;
+        // ch_1.transform.printModelMatrix();
+
+        // std::cout<<"LOCAL TRANSFORMATION"<<std::endl;
+        // ch_1.transform.printLocalModelMatrix();
+        // ch_1.transform.setLocalPosition(vec3(0, 0, 0));
+        // ch_1.transform.setLocalPosition(vec3(1, 1, 0));
+        // ch_1.updateSelfAndChild();
+        // ch_1.transform.setLocalRotation(vec3(0, angle, 0));
+        // ch_1.updateSelfAndChild();
+        // ch_1.transform.setLocalPosition(vec3(-1, -1, 0));
+        // ch_1.updateSelfAndChild();
+        // ch_1.transform.setLocalPosition(vec3(-2, 0, 0));
 
         angle += rota_speed;
         Model = ch_1.transform.modelMatrix;
+        // Model = ch_1.transform.getLocalModelMatrix();
+        // glUniformMatrix4fv(model_handle, 1, GL_FALSE, &temp_Model[0][0]);
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         plane_ch.loadToGpu(programID);
         plane_ch.draw();    // DESSIN DU 2nd MESH
@@ -459,10 +481,6 @@ void processInput(GLFWwindow *window)
         updateMesh =true;
         
     }
-
-    
-
-    //Big chair rotation
 
     
 }

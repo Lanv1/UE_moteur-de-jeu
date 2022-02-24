@@ -63,6 +63,17 @@ struct Transform {
     }
 
 
+    void printLocalModelMatrix(){
+        std::cout<<"MATRIX, pos="<<pos.x<<", "<<pos.y<<", "<<pos.z<<std::endl;
+        glm::mat4 local = getLocalModelMatrix();
+        for(int i = 0; i < 4; i ++){
+            for(int j = 0; j < 4; j ++){
+                std::cout<<local[i][j]<<" | ";
+            }
+            std::cout<<std::endl;
+        }
+    }
+
     void printModelMatrix(){
         std::cout<<"MATRIX, pos="<<pos.x<<", "<<pos.y<<", "<<pos.z<<std::endl;
         for(int i = 0; i < 4; i ++){
