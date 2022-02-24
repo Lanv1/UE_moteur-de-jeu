@@ -250,33 +250,8 @@ int main( void )
 
     
     generatePlan(triangles, indexed_vertices, vert_uv, 4, 4, vec3(0, 0, 0), resolution);
-    // generatePlan(triangles_ch, indexed_vertices_ch, vert_uv_ch, 2, 2, vec3(0, 0, 0), resolution);
+    generatePlan(triangles_ch, indexed_vertices_ch, vert_uv_ch, 2, 2, vec3(0, 0, 0), resolution);
     // randomizeHeight(indexed_vertices, 10);
-
-    //ROOT ENTITY
-    Entity root;
-    Transform tr;
-
-    Transform tr_ch1;
-    Entity child_1;
-    Mesh plane(indexed_vertices, triangles);
-    root.addMesh(plane);
-    root.addTransformation(tr_ch1);
-    tr_ch1.computeModelMatrix();
-
-    Entity child_2;
-    Mesh ch_plane(indexed_vertices_ch, triangles_ch);
-    child_2.addMesh(ch_plane);
-    Transform tr_ch;
-    child_2.addTransformation(tr_ch);
-
-    child_1.addChild(child_2);
-
-    indices.resize(3 * triangles.size());
-    indices = plane.getIndices();
-
-    indices_ch.resize(3 * triangles.size());
-    indices_ch = ch_plane.getIndices();
 
 
     // Get a handle for our "LightPosition" uniform
@@ -285,14 +260,52 @@ int main( void )
     GLuint elementbuffer;
     GLuint uvbuffer;
     GLuint vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch;
-    initBuffers(indices, indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
-    initBuffers(indices_ch, indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
+    // initBuffers(indices_ch, indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
+
+    //ROOT ENTITY
+    Entity root;
+    Transform tr;
+    Mesh plane(indexed_vertices, triangles, vert_uv);
+    initBuffers(plane.getIndices(), indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
+
+    plane.buffers.element = elementbuffer;
+    plane.buffers.vertex = vertexbuffer;
+    plane.buffers.uv = uvbuffer;
+        
+    root.addMesh(plane);
+    root.addTransformation(tr);
 
 
-    std::cout<<triangles.size()<<std::endl;
-    std::cout<<indices.size()<<std::endl;
+    Entity ch_1;
+    Transform tr_1;
+    Mesh plane_ch(indexed_vertices_ch, triangles_ch, vert_uv_ch);
+    initBuffers(plane_ch.getIndices(), indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
+
+    plane_ch.buffers.element = elementbuffer_ch;
+    plane_ch.buffers.vertex = vertexbuffer_ch;
+    plane_ch.buffers.uv = uvbuffer_ch;
+
+    ch_1.addMesh(plane_ch);
+    ch_1.addTransformation(tr_1);
     
+    root.addChild(ch_1);
     
+
+
+    root.transform.setLocalPosition(vec3(-2, -2, 0));
+    root.transform.scale = glm::vec3(2, 2, 2);
+    root.updateSelfAndChild();
+
+    ch_1.transform.printModelMatrix();
+    ch_1.transform.setLocalRotation(vec3(0, -90, 0));
+    ch_1.transform.setLocalPosition(vec3(-2, 0, 0));
+    ch_1.updateSelfAndChild();
+
+    ch_1.transform.printModelMatrix();
+    
+
+    if(ch_1.parent == nullptr)
+        std::cout<<"NO PARENT"<<std::endl;
     // For speed computation
     double lastTime = glfwGetTime();
     int nbFrames = 0;
@@ -329,74 +342,29 @@ int main( void )
         // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
         
-        //PROJECTION et VIEW ne changent pas (caméra)
+        //PROJECTION et VIEW (STATIC PART)(caméra)
         glUniformMatrix4fv(projection_handle, 1, GL_FALSE, &Projection[0][0]);
         glUniformMatrix4fv(view_handle, 1, GL_FALSE, &View[0][0]);
 
 
-        // Transform* c1_tr = child_1.getTransform();
-        Transform* root_tr = root.getTransform();
-        // root_tr->translate(vec3(-1, -1, 0));
-        // root_tr->setRotation(angle, vec3(0., 1., 0.));
-        root_tr->setLocalPosition(vec3(-1, -1, 0.));
-        // c1_tr->setLocalPosition(vec3(-1, -1, 0.));
-        // root_tr->setRotation(angle, 2);
-        glm::mat4 Model = root.getTransform()->getLocalModelMatrix();
-        root.updateSelfAndChild();
-
+        //VARIABLE PART
+        glm::mat4 Model = root.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
+        plane.loadToGpu(programID);
+        plane.draw();   // DESSIN DU PREMIER MESH
 
-        // Model =  glm::translate(Model, vec3(0., -0., transl));
+        ch_1.transform.setLocalRotation(vec3(0, angle, 0));
+        ch_1.transform.setLocalPosition(vec3(4, 0, 0));
+        ch_1.updateSelfAndChild();
 
-        // root.getTransform().setLocalPosition(vec3(0., 0., 3));
-        // glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
-        angle += 2;
-
-
-        // 1rst attribute buffer : vertices
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glVertexAttribPointer(
-                0,                  // attribute
-                3,                  // size
-                GL_FLOAT,           // type
-                GL_FALSE,           // normalized?
-                0,                  // stride
-                (void*)0            // array buffer offset
-        );
+        angle += rota_speed;
+        Model = ch_1.transform.modelMatrix;
+        glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
+        plane_ch.loadToGpu(programID);
+        plane_ch.draw();    // DESSIN DU 2nd MESH
 
 
-        // UVs buffer                   // only for PLANE
-        glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-        glVertexAttribPointer(
-                1,                  // attribute
-                2,                  // size
-                GL_FLOAT,           // type
-                GL_FALSE,           // normalized?
-                0,                  // stride
-                (void*)0            // array buffer offset
-        );
-        
-
-        // Draw the triangles !
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-        glDrawElements(
-                GL_TRIANGLES,      // mode
-                indices.size(),    // count            // SOUP for plane, INDICES for chairs
-                GL_UNSIGNED_SHORT,   // type
-                (void*)0           // element array buffer offset
-        );
-
-        glDisableVertexAttribArray(0);
-        glDisableVertexAttribArray(1);
-
-
-        
         /****************************************/
-
-
-
 
         // Swap buffers
         glfwSwapBuffers(window);

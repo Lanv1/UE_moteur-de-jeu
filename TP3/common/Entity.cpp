@@ -12,23 +12,22 @@ void Entity::addTransformation(Transform t){
     transform = t;
 }
 
-Transform* Entity::getTransform(){
-    return &transform;
-}
-
-void Entity::addChild(Entity child){
-    children.push_back(child);
+void Entity::addChild(Entity& child){
+    children.push_back(&child);
     child.parent = this;
 }
 
 void Entity::updateSelfAndChild(){
     if(parent != nullptr){
-        this->transform.computeModelMatrix(parent->transform.modelMatrix);
+        std::cout<<"I HAVE PARENT"<<std::endl;
+        transform.computeModelMatrix(parent->transform.modelMatrix);
     }else {
-        this->transform.computeModelMatrix();
+        // std::cout<<"I DONT HAVE PARENT"<<std::endl;
+        
+        transform.computeModelMatrix();
     }
 
-    for(Entity child : children){
-        child.updateSelfAndChild();
+    for(Entity* child : children){
+        child->updateSelfAndChild();
     }
 }

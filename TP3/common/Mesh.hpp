@@ -4,7 +4,17 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
+// Include GLEW
+#include <GL/glew.h>
 
+// Include GLFW
+#include <GLFW/glfw3.h>
+
+struct Buffer{
+    GLuint vertex;
+    GLuint element;
+    GLuint uv;
+};
 
 class Mesh{
     protected:
@@ -16,13 +26,17 @@ class Mesh{
         void compute_indices();
     
     public:
+
+        Buffer buffers; // buffers initialisés auparavant
+
         Mesh(std::vector<glm::vec3> v, std::vector<std::vector<unsigned short>> t);
         Mesh(std::vector<glm::vec3> v, std::vector<std::vector<unsigned short>> t, std::vector<glm::vec2> u);
         Mesh();
+
         std::vector<unsigned short> getIndices();
 
-
-
+        void loadToGpu(GLuint prog_id);
+        void draw();
 
 };
 

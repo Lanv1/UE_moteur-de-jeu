@@ -46,8 +46,9 @@ struct Transform {
     }
 
     void computeModelMatrix(const glm::mat4& parentGlobalModelMatrix){
-    
+            
         modelMatrix = parentGlobalModelMatrix * getLocalModelMatrix();
+        
     }
 
     void setLocalPosition(const glm::vec3& newPosition){
@@ -55,12 +56,21 @@ struct Transform {
         m_isDirty = true;
     }
 
-    void setRotation(float angle, const glm::vec3 axis){
-       modelMatrix = glm::rotate(modelMatrix, angle, axis); 
-
+    void setLocalRotation(const glm::vec3& angles){
+        
+        rot = angles;
+        m_isDirty = true;
     }
-    void setRotation(float angle, int axis){
-        rot[axis] = angle;
+
+
+    void printModelMatrix(){
+        std::cout<<"MATRIX, pos="<<pos.x<<", "<<pos.y<<", "<<pos.z<<std::endl;
+        for(int i = 0; i < 4; i ++){
+            for(int j = 0; j < 4; j ++){
+                std::cout<<modelMatrix[i][j]<<" | ";
+            }
+            std::cout<<std::endl;
+        }
     }
     
 
@@ -70,22 +80,21 @@ struct Transform {
 class Entity {
     protected:
 
-        Transform transform;
         Mesh entity_mesh;
 
-        Entity* parent = nullptr;
 
     public:
-        std::vector<Entity> children;
+        std::vector<Entity*> children;
+        Entity* parent = nullptr;
         
         Entity();
         
         void addMesh(Mesh m);
         void addTransformation(Transform t);
 
-        Transform* getTransform();
+        Transform transform;
 
-        void addChild(Entity child);
+        void addChild(Entity& child);
 
         void updateSelfAndChild();
 };
