@@ -248,8 +248,8 @@ int main( void )
     GLuint tex1 = loadBMP_custom("../texture/rock.bmp", 2, rock_loc);
     GLuint tex2 = loadBMP_custom("../texture/snowrocks.bmp", 3, snowRock_loc);
 
-    
     generatePlan(triangles, indexed_vertices, vert_uv, 4, 4, vec3(0, 0, 0), resolution);
+    loadOFF("../OFF/sphere.off", indexed_vertices, indices, triangles);
     generatePlan(triangles_ch, indexed_vertices_ch, vert_uv_ch, 2, 2, vec3(0, 0, 0), resolution);
     // randomizeHeight(indexed_vertices, 10);
 
@@ -260,12 +260,16 @@ int main( void )
     GLuint elementbuffer;
     GLuint uvbuffer;
     GLuint vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch;
-    // initBuffers(indices_ch, indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
 
     //ROOT ENTITY
     Entity root;
     Transform tr;
     Mesh plane(indexed_vertices, triangles, vert_uv);
+    // Mesh plane(indexed_vertices, triangles);
+    // for(size_t i = 0; i < indexed_vertices.size(); i ++){
+    //     std::cout<<"xyz "<<indexed_vertices[i][0]<<", "<<indexed_vertices[i][1]<<", "<<indexed_vertices[i][2]<<std::endl;
+    //     std::cout<<"indices "<<indices[i]<<std::endl;
+    // }
     initBuffers(plane.getIndices(), indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
 
     plane.buffers.element = elementbuffer;
@@ -292,12 +296,12 @@ int main( void )
     
 
 
-    root.transform.setLocalPosition(vec3(-4, -2, 0));
-    root.updateSelfAndChild();
+    // // root.transform.setLocalPosition(vec3(0, 0, 0));
+    // root.updateSelfAndChild();
 
     ch_1.transform.printModelMatrix();
-    ch_1.transform.setLocalPosition(vec3(-2, 1, 0));
-    ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
+    ch_1.transform.setLocalPosition(vec3(-3, -1, 0));
+    // ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
     ch_1.updateSelfAndChild();
 
     ch_1.transform.printModelMatrix();
@@ -347,8 +351,6 @@ int main( void )
 
 
         //VARIABLE PART
-        // root.transform.setLocalRotation(vec3(0, angle, 0));
-        // root.updateSelfAndChild();
         glm::mat4 Model = root.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         plane.loadToGpu(programID);
@@ -362,18 +364,10 @@ int main( void )
 
        
         ch_1.transform.setLocalPosition((vec3) (rotate_around_matrix * glm::vec4(ch_1.transform.pos, 1)));
-        ch_1.transform.setLocalRotation(vec3(0, -angle*2, 0));
         ch_1.updateSelfAndChild();
 
 
-
-        // ch_1.transform.computeModelMatrix(rotate_around_matrix);
-        // std::cout<<"GLOBAL TRANSFORMATION"<<std::endl;
-        // ch_1.transform.printModelMatrix();
-
-
         angle += rota_speed;
-        // ch_1.transform.modelMatrix = rotate_around_matrix * ch_1.transform.modelMatrix;
         Model = ch_1.transform.modelMatrix;
         // Model = rotate_around_matrix * Model;
         // Model = ch_1.transform.getLocalModelMatrix();

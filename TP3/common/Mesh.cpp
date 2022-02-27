@@ -15,7 +15,7 @@ Mesh::Mesh(std::vector<glm::vec3> v, std::vector<std::vector<unsigned short>> t)
     vertices = v;
     triangles = t;
 
-    compute_indices();
+    // compute_indices();
 }
 
 Mesh::Mesh(std::vector<glm::vec3> v, std::vector<std::vector<unsigned short>> t, std::vector<glm::vec2> uvs){

@@ -19,7 +19,7 @@ void Entity::addChild(Entity& child){
 
 void Entity::updateSelfAndChild(){
     if(parent != nullptr){
-        std::cout<<"I HAVE PARENT"<<std::endl;
+        // std::cout<<"I HAVE PARENT"<<std::endl;
         transform.computeModelMatrix(parent->transform.modelMatrix);
     }else {
         // std::cout<<"I DONT HAVE PARENT"<<std::endl;
