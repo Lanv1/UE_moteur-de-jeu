@@ -248,9 +248,12 @@ int main( void )
     GLuint tex1 = loadBMP_custom("../texture/rock.bmp", 2, rock_loc);
     GLuint tex2 = loadBMP_custom("../texture/snowrocks.bmp", 3, snowRock_loc);
 
+    //TODO: uv pour la sphere.
     generatePlan(triangles, indexed_vertices, vert_uv, 4, 4, vec3(0, 0, 0), resolution);
     loadOFF("../OFF/sphere.off", indexed_vertices, indices, triangles);
+
     generatePlan(triangles_ch, indexed_vertices_ch, vert_uv_ch, 2, 2, vec3(0, 0, 0), resolution);
+    loadOFF("../OFF/sphere.off", indexed_vertices_ch, indices_ch, triangles_ch);
     // randomizeHeight(indexed_vertices, 10);
 
 
@@ -264,19 +267,15 @@ int main( void )
     //ROOT ENTITY
     Entity root;
     Transform tr;
-    Mesh plane(indexed_vertices, triangles, vert_uv);
-    // Mesh plane(indexed_vertices, triangles);
-    // for(size_t i = 0; i < indexed_vertices.size(); i ++){
-    //     std::cout<<"xyz "<<indexed_vertices[i][0]<<", "<<indexed_vertices[i][1]<<", "<<indexed_vertices[i][2]<<std::endl;
-    //     std::cout<<"indices "<<indices[i]<<std::endl;
-    // }
-    initBuffers(plane.getIndices(), indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
+    Mesh sun(indexed_vertices, triangles, vert_uv);
 
-    plane.buffers.element = elementbuffer;
-    plane.buffers.vertex = vertexbuffer;
-    plane.buffers.uv = uvbuffer;
+    initBuffers(sun.getIndices(), indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
+
+    sun.buffers.element = elementbuffer;
+    sun.buffers.vertex = vertexbuffer;
+    sun.buffers.uv = uvbuffer;
         
-    root.addMesh(plane);
+    root.addMesh(sun);
     root.addTransformation(tr);
 
 
@@ -295,14 +294,12 @@ int main( void )
     root.addChild(ch_1);
     
 
-
-    // // root.transform.setLocalPosition(vec3(0, 0, 0));
-    // root.updateSelfAndChild();
-
+    // ORIGINAL TRANSFORMATIONS
     ch_1.transform.printModelMatrix();
-    ch_1.transform.setLocalPosition(vec3(-3, -1, 0));
-    // ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
+    ch_1.transform.setLocalPosition(vec3(-2, 0, 0));
+    ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
     ch_1.updateSelfAndChild();
+    vec3 pos = ch_1.transform.pos;
 
     ch_1.transform.printModelMatrix();
     
@@ -351,27 +348,24 @@ int main( void )
 
 
         //VARIABLE PART
+        root.transform.rot.y = angle;
+        root.updateSelfAndChild();
         glm::mat4 Model = root.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
-        plane.loadToGpu(programID);
-        plane.draw();   // DESSIN DU PREMIER MESH
+        sun.loadToGpu(programID);
+        sun.draw();   // DESSIN DU PREMIER MESH
 
-        glm::mat4 rotate_around_matrix(1.0f);
-        rotate_around_matrix = glm::translate(rotate_around_matrix, vec3(1, 0, 0));
-        rotate_around_matrix = glm::rotate(rotate_around_matrix,(float)  0.02, vec3(0, 1, 0));
-        rotate_around_matrix = glm::translate(rotate_around_matrix, vec3(-1, 0, 0));
+        // glm::mat4 rotate_around_matrix(1.0f);
+        // rotate_around_matrix = glm::translate(rotate_around_matrix, ch_1.transform.pos + vec3(1, 0, 0));
+        // rotate_around_matrix = glm::rotate(rotate_around_matrix,(float)  0.02, vec3(0, 0, 1));
+        // rotate_around_matrix = glm::translate(rotate_around_matrix, vec3(-1, 0, 0));
 
 
-       
-        ch_1.transform.setLocalPosition((vec3) (rotate_around_matrix * glm::vec4(ch_1.transform.pos, 1)));
+        ch_1.transform.rot.z = -2.f * angle;
         ch_1.updateSelfAndChild();
+    
 
-
-        angle += rota_speed;
         Model = ch_1.transform.modelMatrix;
-        // Model = rotate_around_matrix * Model;
-        // Model = ch_1.transform.getLocalModelMatrix();
-        // glUniformMatrix4fv(model_handle, 1, GL_FALSE, &temp_Model[0][0]);
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         plane_ch.loadToGpu(programID);
         plane_ch.draw();    // DESSIN DU 2nd MESH
@@ -391,6 +385,9 @@ int main( void )
     glDeleteBuffers(1, &vertexbuffer);
     glDeleteBuffers(1, &elementbuffer);
     glDeleteBuffers(1, &uvbuffer);
+    glDeleteBuffers(1, &vertexbuffer_ch);
+    glDeleteBuffers(1, &elementbuffer_ch);
+    glDeleteBuffers(1, &uvbuffer_ch);
     glDeleteProgram(programID);
     glDeleteVertexArrays(1, &VertexArrayID);
 
@@ -467,9 +464,8 @@ void processInput(GLFWwindow *window)
 
         }
     }
-    if(glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS){
-        transl += 0.0001;
-        updateMesh =true;
+    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
+        angle += rota_speed;
         
     }
 
