@@ -32,8 +32,8 @@ struct Transform {
                     glm::vec3(0.0f, 0.0f, 1.0f));
 
         // Y * X * Z
-        // const glm::mat4 rotationMatrix = transformY * transformX * transformZ;
-        const glm::mat4 rotationMatrix = transformY;
+        const glm::mat4 rotationMatrix = transformY * transformX * transformZ;
+        // const glm::mat4 rotationMatrix = transformY;
 
         // translation * rotation * scale (also know as TRS matrix)
         return glm::translate(glm::mat4(1.0f), pos) *

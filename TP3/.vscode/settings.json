@@ -3,6 +3,7 @@
         "cmath": "cpp",
         "string_view": "cpp",
         "*.tcc": "cpp",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "fstream": "cpp"
     }
 }
