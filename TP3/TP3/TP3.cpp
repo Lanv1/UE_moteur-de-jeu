@@ -72,81 +72,18 @@ void initBuffers(std::vector<unsigned short> indices, std::vector<glm::vec3> ver
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
 }
 
-void generateVertices(std::vector<glm::vec3> &indexed_vertices, std::vector<glm::vec2> &uv, int w, int h, vec3 pos, int res){
-    float current_x, current_y;
-    float x_step = (float) w / (float) res;
-    float y_step = (float) h / (float) res;
 
-    int array_index;
-    vec3 vert;
-
-    for(unsigned short i = 0; i < res; i ++){
-        current_x = i * x_step;
-
-        for(unsigned short j = 0; j < res; j ++) {
-
-            array_index = (i * res + j);
-            current_y = j*y_step;
-
-            vert = vec3(current_x, current_y, 0);
-
-            uv.resize(uv.size() + 1);
-            uv[array_index] = vec2((float) i/ (float) res, (float) j/ (float)res);
-            
-            indexed_vertices.resize(indexed_vertices.size() + 1);
-            indexed_vertices[array_index] = vert;
-
-        }
+void compute_sphere_uv(std::vector<glm::vec3> vertices, std::vector<glm::vec2>& uvs)
+{
+    float u,v;
+    for(glm::vec3 vert : vertices)
+    {
+        u = atan2(vert.x, vert.z) / (2*M_PI) + 0.5;
+        v = vert.y * 0.5 + 0.5;
+        uvs.resize(uvs.size() + 1);
+        uvs[uvs.size() - 1] = glm::vec2(u,v);
     }
 }
-
-void randomizeHeight(std::vector<glm::vec3> &indexed_vertices, int bound) {
-    srand(time(NULL));
-    for(int i = 0; i < indexed_vertices.size();i ++){
-        indexed_vertices[i][2] =  1. / (float) (1 + std::rand() % bound); 
-        // std::cout<<vert[2]<<std::endl;
-        // std::cout<< 1. / (float) (0.3 + std::rand() % bound)<<std::endl;
-    }
-}
-
-void generatePlan(std::vector<std::vector<short unsigned int>> &triangles, std::vector<glm::vec3> &indexed_vertices, std::vector<glm::vec2> &uv, int w, int h, vec3 pos, int res) {
-    // int res_x = 16;       //16x16 vertices
-    // int res_y = 16;       //16x16 vertices
-    triangles.clear();
-    indexed_vertices.clear();
-    uv.clear();
-
-    int array_index;
-    int tr_index = 0;
-
-    generateVertices(indexed_vertices, uv, w, h, pos, resolution);
-
-    
-    for(unsigned short i = 0; i < resolution - 1; i ++){
-        for(unsigned short j = 0; j < resolution - 1; j ++) {
-
-            array_index = (i * resolution + j);
-            
-            triangles.resize(triangles.size() + 2);
-            triangles[tr_index].resize(3);
-            triangles[tr_index][0] = array_index; 
-            triangles[tr_index][1] = array_index + 1; 
-            triangles[tr_index][2] = array_index + resolution; 
-            
-            triangles[tr_index + 1].resize(3);
-            triangles[tr_index + 1][0] = array_index + resolution;
-            triangles[tr_index + 1][1] = array_index + 1;
-            triangles[tr_index + 1][2] = array_index + 1 + resolution;
-
-            tr_index += 2; 
-
-        }
-    }
-
-
-}
-
-
 
 
 /*******************************************************************************/
@@ -217,6 +154,7 @@ int main( void )
     GLuint model_handle = glGetUniformLocation(programID, "model");
     GLuint view_handle = glGetUniformLocation(programID, "view");
     GLuint projection_handle = glGetUniformLocation(programID, "projection");
+    GLuint using_tex_handle = glGetUniformLocation(programID, "tex_to_use");
 
     /****************************************/
     //ROOT plane
@@ -231,31 +169,21 @@ int main( void )
     std::vector<glm::vec2> vert_uv_ch;
 
     // HEIGHTMAPS/TEXTURES
-    // GLuint texture = loadBMP_custom("../texture/tex.bmp");
-    // GLuint texture = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp");
-    // GLuint height_map0 = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp");
-    int height0_loc = glGetUniformLocation(programID, "height0");
-    int grass_loc = glGetUniformLocation(programID, "grass_texture");
-    int rock_loc = glGetUniformLocation(programID, "rock_texture");
-    int snowRock_loc = glGetUniformLocation(programID, "snowRock_texture");
+   
+    int sun_loc = glGetUniformLocation(programID, "sun_texture");
+    int earth_loc = glGetUniformLocation(programID, "earth_texture");
+    int moon_loc = glGetUniformLocation(programID, "snowRock_texture");
 
     glUseProgram(programID);
-    // GLuint height_map1 = loadBMP_custom("../heightMap/.bmp", 0, height0_loc);
-    // GLuint height_map0 = loadBMP_custom("../heightMap/heightmap-1024x1024.bmp", 0, height0_loc);
-    GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Rocky.bmp", 0, height0_loc);
-    // GLuint height_map0 = loadBMP_custom("../heightMap/Heightmap_Mountain.bmp", 0, height0_loc);
-    GLuint tex0 = loadBMP_custom("../texture/grass.bmp", 1, grass_loc);
-    GLuint tex1 = loadBMP_custom("../texture/rock.bmp", 2, rock_loc);
-    GLuint tex2 = loadBMP_custom("../texture/snowrocks.bmp", 3, snowRock_loc);
+    GLuint tex0 = loadBMP_custom("../texture/sun.bmp", 1, sun_loc);
+    GLuint tex1 = loadBMP_custom("../texture/earth.bmp", 2, earth_loc);
+    GLuint tex2 = loadBMP_custom("../texture/capy_ppm.bmp", 3, moon_loc);
 
-    //TODO: uv pour la sphere.
-    generatePlan(triangles, indexed_vertices, vert_uv, 4, 4, vec3(0, 0, 0), resolution);
     loadOFF("../OFF/sphere.off", indexed_vertices, indices, triangles);
-
-    generatePlan(triangles_ch, indexed_vertices_ch, vert_uv_ch, 2, 2, vec3(0, 0, 0), resolution);
+    compute_sphere_uv(indexed_vertices, vert_uv);
+    
     loadOFF("../OFF/sphere.off", indexed_vertices_ch, indices_ch, triangles_ch);
-    // randomizeHeight(indexed_vertices, 10);
-
+    compute_sphere_uv(indexed_vertices_ch, vert_uv_ch);
 
     // Get a handle for our "LightPosition" uniform
     GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
@@ -264,44 +192,37 @@ int main( void )
     GLuint uvbuffer;
     GLuint vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch;
 
-    //ROOT ENTITY
+    //ROOT ENTITY (SUN)
     Entity root;
     Transform tr;
     Mesh sun(indexed_vertices, triangles, vert_uv);
-
     initBuffers(sun.getIndices(), indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
-
     sun.buffers.element = elementbuffer;
     sun.buffers.vertex = vertexbuffer;
-    sun.buffers.uv = uvbuffer;
-        
+    sun.buffers.uv = uvbuffer;       
     root.addMesh(sun);
     root.addTransformation(tr);
 
-
+    //CHILD_1 ENTITY (EARTH)
     Entity ch_1;
     Transform tr_1;
-    Mesh plane_ch(indexed_vertices_ch, triangles_ch, vert_uv_ch);
-    initBuffers(plane_ch.getIndices(), indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
-
-    plane_ch.buffers.element = elementbuffer_ch;
-    plane_ch.buffers.vertex = vertexbuffer_ch;
-    plane_ch.buffers.uv = uvbuffer_ch;
-
-    ch_1.addMesh(plane_ch);
-    ch_1.addTransformation(tr_1);
-    
+    Mesh earth(indexed_vertices_ch, triangles_ch, vert_uv_ch);
+    initBuffers(earth.getIndices(), indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
+    earth.buffers.element = elementbuffer_ch;
+    earth.buffers.vertex = vertexbuffer_ch;
+    earth.buffers.uv = uvbuffer_ch;
+    ch_1.addMesh(earth);
+    ch_1.addTransformation(tr_1); 
     root.addChild(ch_1);
     
 
     // ORIGINAL TRANSFORMATIONS
-    ch_1.transform.printModelMatrix();
+    root.transform.setLocalPosition(vec3(0, 0, 0));
+    root.updateSelfAndChild();
     ch_1.transform.setLocalPosition(vec3(-2, 0, 0));
     ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
     ch_1.updateSelfAndChild();
     vec3 pos = ch_1.transform.pos;
-
-    ch_1.transform.printModelMatrix();
     
 
     if(ch_1.parent == nullptr)
@@ -336,10 +257,7 @@ int main( void )
 
         glm::mat4 View;
         // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
-        View = glm::lookAt( camera_position, camera_target + camera_position, camera_up);
-        // View = glm::rotate(View, (float)45., vec3(1., 0., 0.));
-        
-        // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+        View = glm::lookAt( camera_position, camera_target + camera_position, camera_up); 
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
         
         //PROJECTION et VIEW (STATIC PART)(caméra)
@@ -348,29 +266,25 @@ int main( void )
 
 
         //VARIABLE PART
-        root.transform.rot.y = angle;
-        root.updateSelfAndChild();
         glm::mat4 Model = root.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
+        glUniform1i(using_tex_handle, 0);
         sun.loadToGpu(programID);
         sun.draw();   // DESSIN DU PREMIER MESH
 
-        // glm::mat4 rotate_around_matrix(1.0f);
-        // rotate_around_matrix = glm::translate(rotate_around_matrix, ch_1.transform.pos + vec3(1, 0, 0));
-        // rotate_around_matrix = glm::rotate(rotate_around_matrix,(float)  0.02, vec3(0, 0, 1));
-        // rotate_around_matrix = glm::translate(rotate_around_matrix, vec3(-1, 0, 0));
 
-
-        ch_1.transform.rot.z = -2.f * angle;
+        ch_1.transform.setSelfRotate_Y(1.5*angle);
+        ch_1.transform.rot.y = 2.f * angle;
         ch_1.updateSelfAndChild();
     
 
         Model = ch_1.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
-        plane_ch.loadToGpu(programID);
-        plane_ch.draw();    // DESSIN DU 2nd MESH
+        glUniform1i(using_tex_handle, 1);
+        earth.loadToGpu(programID);
+        earth.draw();    // DESSIN DU 2nd MESH
 
-
+        angle += rota_speed;
         /****************************************/
 
         // Swap buffers
@@ -407,14 +321,9 @@ void processInput(GLFWwindow *window)
 
     //Camera zoom in and out
     float cameraSpeed = 2.5 * deltaTime;
-
-    if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS){
-        orbital = !orbital;
-        std::cout<<"ORBITAL: "<<orbital<<std::endl;
-    }
     //TODO add translations
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
-        rota_speed += 0.1;
+        rota_speed += 0.01;
     }
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
         rota_speed = (rota_speed - 0.01) < 0?rota_speed: rota_speed- 0.01;

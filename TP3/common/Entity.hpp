@@ -10,8 +10,11 @@
 struct Transform {
     //Local space information
     glm::vec3 pos = { 0.0f, 0.0f, 0.0f };
-    glm::vec3 rot = { 0.0f, 0.0f, 0.0f }; //In degrees
+    glm::vec3 rot = { 0.0f, 0.0f, 0.0f }; //rotation AROUND PARENT
     glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+
+    //SelfRotation
+    glm::mat4 selfRotMatrix = glm::mat4(1.0f);
 
     //Global space information concatenate in matrix
     glm::mat4 modelMatrix = glm::mat4(1.0f);
@@ -33,13 +36,38 @@ struct Transform {
 
         // Y * X * Z
         const glm::mat4 rotationMatrix = transformY * transformX * transformZ;
-        // const glm::mat4 rotationMatrix = transformY;
+          
 
-        // translation * rotation * scale (also know as TRS matrix)
-        return glm::translate(glm::mat4(1.0f), pos) *
-                    rotationMatrix *
-                    glm::scale(glm::mat4(1.0f), scale);
+        return (rotationMatrix * 
+                glm::translate(glm::mat4(1.0f), pos)*    // ROTATES AROUND PARENT ENTITY
+                glm::scale(glm::mat4(1.0f), scale)) * 
+                selfRotMatrix;                              //SELF ROTATION
     }
+
+    void setSelfRotate_Y(const float angle){
+
+        selfRotMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0.75));       //MAILLAGE NON ALIGNé
+        selfRotMatrix = glm::rotate(selfRotMatrix,glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+        selfRotMatrix = glm::translate(selfRotMatrix, -glm::vec3(0, 0, 0.75));     
+    }
+
+    void setSelfRotate_X(const float angle){
+
+        selfRotMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0., 0, 0.75));       //MAILLAGE NON ALIGNé
+        selfRotMatrix = glm::rotate(selfRotMatrix,glm::radians(angle), glm::vec3(1.0f, 0.0f, 0.0f));
+        selfRotMatrix = glm::translate(selfRotMatrix, -glm::vec3(0., 0, 0.75));
+
+    }
+
+    void setSelfRotate_Z(const float angle){
+
+        selfRotMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0., 0, 0.75));       //MAILLAGE NON ALIGNé
+        selfRotMatrix = glm::rotate(selfRotMatrix,glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
+        selfRotMatrix = glm::translate(selfRotMatrix, -glm::vec3(0., 0, 0.75));
+
+    }
+
+
 
     void computeModelMatrix(){
     
@@ -65,7 +93,6 @@ struct Transform {
 
 
     void printLocalModelMatrix(){
-        std::cout<<"MATRIX, pos="<<pos.x<<", "<<pos.y<<", "<<pos.z<<std::endl;
         glm::mat4 local = getLocalModelMatrix();
         for(int i = 0; i < 4; i ++){
             for(int j = 0; j < 4; j ++){
@@ -76,7 +103,6 @@ struct Transform {
     }
 
     void printModelMatrix(){
-        std::cout<<"MATRIX, pos="<<pos.x<<", "<<pos.y<<", "<<pos.z<<std::endl;
         for(int i = 0; i < 4; i ++){
             for(int j = 0; j < 4; j ++){
                 std::cout<<modelMatrix[i][j]<<" | ";

@@ -4,27 +4,24 @@
 in vec2 UV;
 
 in float height;
-// Ouput data
 out vec3 color;
 
-uniform sampler2D grass_texture;
-uniform sampler2D rock_texture;
-uniform sampler2D snowRock_texture;
-// uniform sampler2D tex1;
+uniform sampler2D sun_texture;
+uniform sampler2D earth_texture;
+uniform sampler2D moon_texture;
+
+uniform int tex_to_use;
 
 void main(){
-        if(height < 0.3){
-                // color = texture(grass_texture, UV).rgb;
-                color = mix(
-                        texture(grass_texture, UV).rgb,
-                        texture(rock_texture, UV).rgb,
-                        0.5
-                        );
-        }else if(height < 0.7){
-                color = texture(rock_texture, UV).rgb;
-        }else {
-                color = texture(snowRock_texture, UV).rgb;
+        if(tex_to_use == 1){
+
+                color = texture(earth_texture, UV).rgb;
+        }else{
+
+                color = texture(sun_texture, UV).rgb;
         }
+       
+
 
 
 }
