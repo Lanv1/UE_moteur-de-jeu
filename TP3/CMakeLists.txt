@@ -55,7 +55,7 @@ add_definitions(
 
 # TP3
 add_executable(TP3
-        TP3/TP3.cpp
+	TP3/TP3.cpp
 	common/shader.cpp
 	common/shader.hpp
 	common/controls.cpp
@@ -71,8 +71,8 @@ add_executable(TP3
 	common/Mesh.hpp
 	common/Mesh.cpp
 	
-        TP3/vertex_shader.glsl
-        TP3/fragment_shader.glsl
+	TP3/vertex_shader.glsl
+	TP3/fragment_shader.glsl
 )
 target_link_libraries(TP3
 	${ALL_LIBS}

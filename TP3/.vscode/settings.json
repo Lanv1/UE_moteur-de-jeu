@@ -4,6 +4,7 @@
         "string_view": "cpp",
         "*.tcc": "cpp",
         "numeric": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "typeinfo": "cpp"
     }
 }

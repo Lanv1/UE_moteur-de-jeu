@@ -16,6 +16,9 @@ void main(){
         if(tex_to_use == 1){
 
                 color = texture(earth_texture, UV).rgb;
+        }else if(tex_to_use == 2){
+
+                color = texture(moon_texture, UV).rgb;
         }else{
 
                 color = texture(sun_texture, UV).rgb;

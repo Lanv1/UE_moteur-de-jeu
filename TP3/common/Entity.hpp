@@ -13,9 +13,6 @@ struct Transform {
     glm::vec3 rot = { 0.0f, 0.0f, 0.0f }; //rotation AROUND PARENT
     glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
 
-    //SelfRotation
-    glm::mat4 selfRotMatrix = glm::mat4(1.0f);
-
     //Global space information concatenate in matrix
     glm::mat4 modelMatrix = glm::mat4(1.0f);
 
@@ -40,34 +37,8 @@ struct Transform {
 
         return (rotationMatrix * 
                 glm::translate(glm::mat4(1.0f), pos)*    // ROTATES AROUND PARENT ENTITY
-                glm::scale(glm::mat4(1.0f), scale)) * 
-                selfRotMatrix;                              //SELF ROTATION
+                glm::scale(glm::mat4(1.0f), scale)); 
     }
-
-    void setSelfRotate_Y(const float angle){
-
-        selfRotMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0.75));       //MAILLAGE NON ALIGNé
-        selfRotMatrix = glm::rotate(selfRotMatrix,glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-        selfRotMatrix = glm::translate(selfRotMatrix, -glm::vec3(0, 0, 0.75));     
-    }
-
-    void setSelfRotate_X(const float angle){
-
-        selfRotMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0., 0, 0.75));       //MAILLAGE NON ALIGNé
-        selfRotMatrix = glm::rotate(selfRotMatrix,glm::radians(angle), glm::vec3(1.0f, 0.0f, 0.0f));
-        selfRotMatrix = glm::translate(selfRotMatrix, -glm::vec3(0., 0, 0.75));
-
-    }
-
-    void setSelfRotate_Z(const float angle){
-
-        selfRotMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0., 0, 0.75));       //MAILLAGE NON ALIGNé
-        selfRotMatrix = glm::rotate(selfRotMatrix,glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
-        selfRotMatrix = glm::translate(selfRotMatrix, -glm::vec3(0., 0, 0.75));
-
-    }
-
-
 
     void computeModelMatrix(){
     
@@ -122,6 +93,7 @@ class Entity {
 
 
     public:
+        char* name;
         std::vector<Entity*> children;
         Entity* parent = nullptr;
         
@@ -135,5 +107,9 @@ class Entity {
         void addChild(Entity& child);
 
         void updateSelfAndChild();
+
+        bool hasChildren();
+
+        void setName(char*);
 };
 #endif

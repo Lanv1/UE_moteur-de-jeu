@@ -31,3 +31,11 @@ void Entity::updateSelfAndChild(){
         child->updateSelfAndChild();
     }
 }
+
+bool Entity::hasChildren(){
+    return children.size() > 0;
+}
+
+void Entity::setName(char* n){
+    name = n;
+}

@@ -157,27 +157,31 @@ int main( void )
     GLuint using_tex_handle = glGetUniformLocation(programID, "tex_to_use");
 
     /****************************************/
-    //ROOT plane
+    //ROOT mesh
     std::vector<unsigned short> indices; //Triangles concaténés dans une liste
     std::vector<std::vector<unsigned short> > triangles;
     std::vector<glm::vec3> indexed_vertices;
     std::vector<glm::vec2> vert_uv;
-    //CHILD plane
+    //CHILD mesh
     std::vector<unsigned short> indices_ch; //Triangles concaténés dans une liste
     std::vector<std::vector<unsigned short> > triangles_ch;
     std::vector<glm::vec3> indexed_vertices_ch;
     std::vector<glm::vec2> vert_uv_ch;
+    //CHILD mesh
+    std::vector<unsigned short> indices_ch_1; //Triangles concaténés dans une liste
+    std::vector<std::vector<unsigned short> > triangles_ch_1;
+    std::vector<glm::vec3> indexed_vertices_ch_1;
+    std::vector<glm::vec2> vert_uv_ch_1;
 
     // HEIGHTMAPS/TEXTURES
-   
     int sun_loc = glGetUniformLocation(programID, "sun_texture");
     int earth_loc = glGetUniformLocation(programID, "earth_texture");
-    int moon_loc = glGetUniformLocation(programID, "snowRock_texture");
+    int moon_loc = glGetUniformLocation(programID, "moon_texture");
 
     glUseProgram(programID);
     GLuint tex0 = loadBMP_custom("../texture/sun.bmp", 1, sun_loc);
     GLuint tex1 = loadBMP_custom("../texture/earth.bmp", 2, earth_loc);
-    GLuint tex2 = loadBMP_custom("../texture/capy_ppm.bmp", 3, moon_loc);
+    GLuint tex2 = loadBMP_custom("../texture/moon.bmp", 3, moon_loc);
 
     loadOFF("../OFF/sphere.off", indexed_vertices, indices, triangles);
     compute_sphere_uv(indexed_vertices, vert_uv);
@@ -185,12 +189,16 @@ int main( void )
     loadOFF("../OFF/sphere.off", indexed_vertices_ch, indices_ch, triangles_ch);
     compute_sphere_uv(indexed_vertices_ch, vert_uv_ch);
 
+    loadOFF("../OFF/sphere.off", indexed_vertices_ch_1, indices_ch_1, triangles_ch_1);
+    compute_sphere_uv(indexed_vertices_ch_1, vert_uv_ch_1);
+
     // Get a handle for our "LightPosition" uniform
     GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
     GLuint vertexbuffer;
     GLuint elementbuffer;
     GLuint uvbuffer;
     GLuint vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch;
+    GLuint vertexbuffer_ch_1, elementbuffer_ch_1, uvbuffer_ch_1;
 
     //ROOT ENTITY (SUN)
     Entity root;
@@ -199,7 +207,8 @@ int main( void )
     initBuffers(sun.getIndices(), indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
     sun.buffers.element = elementbuffer;
     sun.buffers.vertex = vertexbuffer;
-    sun.buffers.uv = uvbuffer;       
+    sun.buffers.uv = uvbuffer;   
+    root.setName((char *) "sun");    
     root.addMesh(sun);
     root.addTransformation(tr);
 
@@ -211,19 +220,51 @@ int main( void )
     earth.buffers.element = elementbuffer_ch;
     earth.buffers.vertex = vertexbuffer_ch;
     earth.buffers.uv = uvbuffer_ch;
+    ch_1.setName((char *) "earth");
     ch_1.addMesh(earth);
     ch_1.addTransformation(tr_1); 
     root.addChild(ch_1);
+
+    //CHILD_2 ENTITY (MOON)
+    Entity ch_2;
+    Transform tr_2;
+    Mesh moon(indexed_vertices_ch_1, triangles_ch_1, vert_uv_ch_1);
+    initBuffers(moon.getIndices(), indexed_vertices_ch_1, vert_uv_ch_1, vertexbuffer_ch_1, elementbuffer_ch_1, uvbuffer_ch_1);
+    moon.buffers.element = elementbuffer_ch;
+    moon.buffers.vertex = vertexbuffer_ch;
+    moon.buffers.uv = uvbuffer_ch;
+    ch_2.setName((char *) "moon");
+    ch_2.addMesh(moon);
+    ch_2.addTransformation(tr_2); 
+    ch_1.addChild(ch_2);
     
 
     // ORIGINAL TRANSFORMATIONS
-    root.transform.setLocalPosition(vec3(0, 0, 0));
+    root.transform.setLocalPosition(vec3(4, 0, 0));
     root.updateSelfAndChild();
     ch_1.transform.setLocalPosition(vec3(-2, 0, 0));
-    ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
+    // ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
+    // ch_1.transform.scale = vec3(2, 2, 2);
     ch_1.updateSelfAndChild();
-    vec3 pos = ch_1.transform.pos;
+
+    ch_2.transform.setLocalPosition(vec3(-1, 0, 0));
+    ch_2.transform.scale = vec3(0.5, 0.5, 0.5);
+    ch_2.updateSelfAndChild();
     
+    //SCENE GRAPH
+    Entity* current_entity = &root;
+    while(current_entity != nullptr){
+        std::cout<<current_entity->name<<" WORLD MODEL MATRIX: "<<std::endl;
+        current_entity->transform.printModelMatrix();
+
+        std::cout<<current_entity->name<<" LOCAL MODEL MATRIX"<<std::endl;
+        current_entity->transform.printLocalModelMatrix();
+        if(current_entity->hasChildren()){
+            current_entity = current_entity->children.back();
+        }else{
+            current_entity = nullptr;
+        }
+    }   
 
     if(ch_1.parent == nullptr)
         std::cout<<"NO PARENT"<<std::endl;
@@ -264,8 +305,8 @@ int main( void )
         glUniformMatrix4fv(projection_handle, 1, GL_FALSE, &Projection[0][0]);
         glUniformMatrix4fv(view_handle, 1, GL_FALSE, &View[0][0]);
 
-
-        //VARIABLE PART
+        
+        //MODEL PART
         glm::mat4 Model = root.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_tex_handle, 0);
@@ -273,16 +314,27 @@ int main( void )
         sun.draw();   // DESSIN DU PREMIER MESH
 
 
-        ch_1.transform.setSelfRotate_Y(1.5*angle);
-        ch_1.transform.rot.y = 2.f * angle;
+        //EARTH
+        ch_1.transform.rot.y = angle;       // rotation autour du parent (soleil ici)
         ch_1.updateSelfAndChild();
     
-
         Model = ch_1.transform.modelMatrix;
+        // Model = glm::rotate(Model, (float) 10, glm::vec3(1, 0, 0));
+        Model = glm::rotate(Model, (float) angle, glm::vec3(0, 1, 0));
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
-        glUniform1i(using_tex_handle, 1);
+        glUniform1i(using_tex_handle, 1);                       // choix de la texture (0= soleil, 1= terre, 2= lune)
         earth.loadToGpu(programID);
-        earth.draw();    // DESSIN DU 2nd MESH
+        earth.draw();   
+
+
+        //MOON
+        ch_2.transform.rot.y = 10.f * angle;
+        ch_2.updateSelfAndChild();
+        Model = ch_2.transform.modelMatrix;
+        glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
+        glUniform1i(using_tex_handle, 2);
+        moon.loadToGpu(programID);
+        moon.draw();    
 
         angle += rota_speed;
         /****************************************/
