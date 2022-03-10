@@ -35,9 +35,15 @@ struct Transform {
         const glm::mat4 rotationMatrix = transformY * transformX * transformZ;
           
 
-        return (rotationMatrix * 
-                glm::translate(glm::mat4(1.0f), pos)*    // ROTATES AROUND PARENT ENTITY
-                glm::scale(glm::mat4(1.0f), scale)); 
+        return glm::scale(glm::mat4(1.0f), scale)* 
+                rotationMatrix * 
+                glm::translate(glm::mat4(1.0f), pos);    // ROTATES AROUND PARENT ENTITY
+        
+        
+        // return glm::scale(glm::mat4(1.0f), scale)* 
+        //         glm::translate(glm::mat4(1.0f), pos)*    // ROTATES ON SELF AXIS
+        //         rotationMatrix; 
+                
     }
 
     void computeModelMatrix(){
@@ -91,16 +97,15 @@ class Entity {
 
         Mesh entity_mesh;
 
-
     public:
         char* name;
         std::vector<Entity*> children;
         Entity* parent = nullptr;
         
         Entity();
+        Entity(Mesh, char*);
         
         void addMesh(Mesh m);
-        void addTransformation(Transform t);
 
         Transform transform;
 

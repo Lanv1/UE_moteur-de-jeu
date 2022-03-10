@@ -44,7 +44,8 @@ float lastFrame = 0.0f;
 //rotation
 float angle = 1.;
 float rota_speed = 1;
-float zoom = 1.;
+float camera_angle_X = 0.;
+float camera_angle_Y = 0.;
 vec3 orbital_axis;
 
 //res
@@ -55,24 +56,7 @@ bool orbital = false;
 
 float transl =0;
 
-void initBuffers(std::vector<unsigned short> indices, std::vector<glm::vec3> vertices, std::vector<glm::vec2> uvs, GLuint& vertexbuffer, GLuint& elementbuffer, GLuint& uvbuffer){
-    // Generate a buffer for UVs
-    glGenBuffers(1, &uvbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-    glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
-    
-    // Load vertices into a VBO
-    glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-
-    // Generate a buffer for the indices as well
-    glGenBuffers(1, &elementbuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
-}
-
-
+// calcule les uv de la sphère et les stock dans uvs
 void compute_sphere_uv(std::vector<glm::vec3> vertices, std::vector<glm::vec2>& uvs)
 {
     float u,v;
@@ -143,6 +127,7 @@ int main( void )
     // Cull triangles which normal is not towards the camera
     //glEnable(GL_CULL_FACE);
 
+    // VAO
     GLuint VertexArrayID;
     glGenVertexArrays(1, &VertexArrayID);
     glBindVertexArray(VertexArrayID);
@@ -157,40 +142,26 @@ int main( void )
     GLuint using_tex_handle = glGetUniformLocation(programID, "tex_to_use");
 
     /****************************************/
-    //ROOT mesh
+    //Mesh ARRAYS
     std::vector<unsigned short> indices; //Triangles concaténés dans une liste
     std::vector<std::vector<unsigned short> > triangles;
     std::vector<glm::vec3> indexed_vertices;
     std::vector<glm::vec2> vert_uv;
-    //CHILD mesh
-    std::vector<unsigned short> indices_ch; //Triangles concaténés dans une liste
-    std::vector<std::vector<unsigned short> > triangles_ch;
-    std::vector<glm::vec3> indexed_vertices_ch;
-    std::vector<glm::vec2> vert_uv_ch;
-    //CHILD mesh
-    std::vector<unsigned short> indices_ch_1; //Triangles concaténés dans une liste
-    std::vector<std::vector<unsigned short> > triangles_ch_1;
-    std::vector<glm::vec3> indexed_vertices_ch_1;
-    std::vector<glm::vec2> vert_uv_ch_1;
 
     // HEIGHTMAPS/TEXTURES
     int sun_loc = glGetUniformLocation(programID, "sun_texture");
     int earth_loc = glGetUniformLocation(programID, "earth_texture");
     int moon_loc = glGetUniformLocation(programID, "moon_texture");
 
-    glUseProgram(programID);
+    glUseProgram(programID); //IMPORTANT
     GLuint tex0 = loadBMP_custom("../texture/sun.bmp", 1, sun_loc);
     GLuint tex1 = loadBMP_custom("../texture/earth.bmp", 2, earth_loc);
     GLuint tex2 = loadBMP_custom("../texture/moon.bmp", 3, moon_loc);
 
+    //SPHERE MESH
     loadOFF("../OFF/sphere.off", indexed_vertices, indices, triangles);
     compute_sphere_uv(indexed_vertices, vert_uv);
     
-    loadOFF("../OFF/sphere.off", indexed_vertices_ch, indices_ch, triangles_ch);
-    compute_sphere_uv(indexed_vertices_ch, vert_uv_ch);
-
-    loadOFF("../OFF/sphere.off", indexed_vertices_ch_1, indices_ch_1, triangles_ch_1);
-    compute_sphere_uv(indexed_vertices_ch_1, vert_uv_ch_1);
 
     // Get a handle for our "LightPosition" uniform
     GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
@@ -201,64 +172,45 @@ int main( void )
     GLuint vertexbuffer_ch_1, elementbuffer_ch_1, uvbuffer_ch_1;
 
     //ROOT ENTITY (SUN)
-    Entity root;
-    Transform tr;
     Mesh sun(indexed_vertices, triangles, vert_uv);
-    initBuffers(sun.getIndices(), indexed_vertices, vert_uv, vertexbuffer, elementbuffer, uvbuffer);
-    sun.buffers.element = elementbuffer;
-    sun.buffers.vertex = vertexbuffer;
-    sun.buffers.uv = uvbuffer;   
-    root.setName((char *) "sun");    
-    root.addMesh(sun);
-    root.addTransformation(tr);
+    Entity root_entity(sun, (char *) "sun");
+    sun.initBuffers();
 
     //CHILD_1 ENTITY (EARTH)
-    Entity ch_1;
-    Transform tr_1;
-    Mesh earth(indexed_vertices_ch, triangles_ch, vert_uv_ch);
-    initBuffers(earth.getIndices(), indexed_vertices_ch, vert_uv_ch, vertexbuffer_ch, elementbuffer_ch, uvbuffer_ch);
-    earth.buffers.element = elementbuffer_ch;
-    earth.buffers.vertex = vertexbuffer_ch;
-    earth.buffers.uv = uvbuffer_ch;
-    ch_1.setName((char *) "earth");
-    ch_1.addMesh(earth);
-    ch_1.addTransformation(tr_1); 
-    root.addChild(ch_1);
+    Mesh earth(indexed_vertices, triangles, vert_uv);
+    Entity child_1_entity(earth, (char *) "earth");
+    earth.initBuffers();
+    root_entity.addChild(child_1_entity);
 
     //CHILD_2 ENTITY (MOON)
-    Entity ch_2;
-    Transform tr_2;
-    Mesh moon(indexed_vertices_ch_1, triangles_ch_1, vert_uv_ch_1);
-    initBuffers(moon.getIndices(), indexed_vertices_ch_1, vert_uv_ch_1, vertexbuffer_ch_1, elementbuffer_ch_1, uvbuffer_ch_1);
-    moon.buffers.element = elementbuffer_ch;
-    moon.buffers.vertex = vertexbuffer_ch;
-    moon.buffers.uv = uvbuffer_ch;
-    ch_2.setName((char *) "moon");
-    ch_2.addMesh(moon);
-    ch_2.addTransformation(tr_2); 
-    ch_1.addChild(ch_2);
+    Mesh moon(indexed_vertices, triangles, vert_uv);
+    Entity child_2_entity(moon, (char*) "moon");
+    moon.initBuffers();
+    child_1_entity.addChild(child_2_entity);
     
 
-    // ORIGINAL TRANSFORMATIONS
-    root.transform.setLocalPosition(vec3(4, 0, 0));
-    root.updateSelfAndChild();
-    ch_1.transform.setLocalPosition(vec3(-2, 0, 0));
-    // ch_1.transform.scale = vec3(0.5, 0.5, 0.5);
-    // ch_1.transform.scale = vec3(2, 2, 2);
-    ch_1.updateSelfAndChild();
+    // Modifier les parametres de base de la scene
+    root_entity.transform.scale = vec3(5, 5, 5);
+    root_entity.updateSelfAndChild();
 
-    ch_2.transform.setLocalPosition(vec3(-1, 0, 0));
-    ch_2.transform.scale = vec3(0.5, 0.5, 0.5);
-    ch_2.updateSelfAndChild();
+    child_1_entity.transform.scale = vec3(0.2, 0.2, 0.2);
+    child_1_entity.transform.setLocalPosition(vec3(-5, 0, 0));
+    child_1_entity.updateSelfAndChild();
+
+    child_2_entity.transform.setLocalPosition(vec3(2, 0, 0));
+    child_2_entity.transform.scale = vec3(0.5, 0.5, 0.5);
+    child_2_entity.updateSelfAndChild();
+
     
-    //SCENE GRAPH
-    Entity* current_entity = &root;
+    //Naviguer a travers le SCENE GRAPH
+    Entity* current_entity = &root_entity;
     while(current_entity != nullptr){
         std::cout<<current_entity->name<<" WORLD MODEL MATRIX: "<<std::endl;
         current_entity->transform.printModelMatrix();
 
         std::cout<<current_entity->name<<" LOCAL MODEL MATRIX"<<std::endl;
         current_entity->transform.printLocalModelMatrix();
+        
         if(current_entity->hasChildren()){
             current_entity = current_entity->children.back();
         }else{
@@ -266,8 +218,6 @@ int main( void )
         }
     }   
 
-    if(ch_1.parent == nullptr)
-        std::cout<<"NO PARENT"<<std::endl;
     // For speed computation
     double lastTime = glfwGetTime();
     int nbFrames = 0;
@@ -289,51 +239,48 @@ int main( void )
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Use our shader
-        glUseProgram(programID);
-
-        
-        // Model matrix : an identity matrix (model will be at the origin) then change
-        // glm::mat4 Model = glm::mat4(1.0f);
-
         glm::mat4 View;
         // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
         View = glm::lookAt( camera_position, camera_target + camera_position, camera_up); 
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
-        
-        //PROJECTION et VIEW (STATIC PART)(caméra)
+        View = glm::translate(View, vec3(0., 0., -8));
+        View = glm::rotate(View, camera_angle_X, vec3(1, 0, 0));    // parametrage camera orbitale
+        View = glm::rotate(View, camera_angle_Y, vec3(0, 1, 0));
+
+        //PROJECTION et VIEW (caméra)
         glUniformMatrix4fv(projection_handle, 1, GL_FALSE, &Projection[0][0]);
         glUniformMatrix4fv(view_handle, 1, GL_FALSE, &View[0][0]);
 
+        //MODEL 
+        glm::mat4 Model = root_entity.transform.modelMatrix;
         
-        //MODEL PART
-        glm::mat4 Model = root.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_tex_handle, 0);
-        sun.loadToGpu(programID);
-        sun.draw();   // DESSIN DU PREMIER MESH
+        sun.loadToGpu();
+        sun.draw();  
 
 
         //EARTH
-        ch_1.transform.rot.y = angle;       // rotation autour du parent (soleil ici)
-        ch_1.updateSelfAndChild();
-    
-        Model = ch_1.transform.modelMatrix;
-        // Model = glm::rotate(Model, (float) 10, glm::vec3(1, 0, 0));
+        child_1_entity.transform.rot.y = angle;       // rotation autour du parent (soleil ici)
+        child_1_entity.updateSelfAndChild();  
+        Model = child_1_entity.transform.modelMatrix;
+        Model = glm::rotate(Model, (float) 0.5, glm::vec3(1, 0, 0));
         Model = glm::rotate(Model, (float) angle, glm::vec3(0, 1, 0));
+        
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_tex_handle, 1);                       // choix de la texture (0= soleil, 1= terre, 2= lune)
-        earth.loadToGpu(programID);
+        earth.loadToGpu();
         earth.draw();   
 
 
         //MOON
-        ch_2.transform.rot.y = 10.f * angle;
-        ch_2.updateSelfAndChild();
-        Model = ch_2.transform.modelMatrix;
+        child_2_entity.transform.rot.y = 10.f * angle;
+        child_2_entity.updateSelfAndChild();
+        Model = child_2_entity.transform.modelMatrix;
+        
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_tex_handle, 2);
-        moon.loadToGpu(programID);
+        moon.loadToGpu();
         moon.draw();    
 
         angle += rota_speed;
@@ -348,12 +295,6 @@ int main( void )
            glfwWindowShouldClose(window) == 0 );
 
     // Cleanup VBO and shader
-    glDeleteBuffers(1, &vertexbuffer);
-    glDeleteBuffers(1, &elementbuffer);
-    glDeleteBuffers(1, &uvbuffer);
-    glDeleteBuffers(1, &vertexbuffer_ch);
-    glDeleteBuffers(1, &elementbuffer_ch);
-    glDeleteBuffers(1, &uvbuffer_ch);
     glDeleteProgram(programID);
     glDeleteVertexArrays(1, &VertexArrayID);
 
@@ -371,9 +312,7 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    //Camera zoom in and out
     float cameraSpeed = 2.5 * deltaTime;
-    //TODO add translations
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
         rota_speed += 0.01;
     }
@@ -383,51 +322,38 @@ void processInput(GLFWwindow *window)
 
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-        if(orbital){
-            zoom += 0.1;
-            orbital_axis = vec3(1, 0, 0);
-            // cos(z) sin(y)
-            // camera_position += vec3(0., sin(cameraSpeed), cos(cameraSpeed)) + camera_target;
-            
-        }else {
-
-            camera_position += cameraSpeed * camera_target;
-        }
+        camera_position += cameraSpeed * camera_target;
     }
+
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-        if(orbital){
-            zoom -= 0.1;
-            orbital_axis = vec3(1, 0, 0);
-
-        }else{
-            camera_position -= cameraSpeed * camera_target;
-
-        }
+        camera_position -= cameraSpeed * camera_target;
 
     }
 
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-        if(orbital){
-            zoom += 0.1;
-            orbital_axis = vec3(0., 1, 0);
 
-        }else{
+        camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
 
-            camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
-        }
     }
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-        if(orbital){
-            zoom -= 0.1;
-            orbital_axis = vec3(0, 1, 0);
-        }else{
-            camera_position += glm::vec3(cameraSpeed, 0, 0);
 
-        }
+        camera_position += glm::vec3(cameraSpeed, 0, 0);
+ 
     }
-    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-        angle += rota_speed;
-        
+
+    if(glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS){
+        camera_angle_Y -= cameraSpeed;        
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS){
+        camera_angle_Y += cameraSpeed;        
+    }
+    if(glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS){
+        camera_angle_X -= cameraSpeed;        
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS){
+        camera_angle_X += cameraSpeed;        
     }
 
     

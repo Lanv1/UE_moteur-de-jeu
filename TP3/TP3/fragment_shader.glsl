@@ -3,7 +3,7 @@
 // coordonées uv
 in vec2 UV;
 
-in float height;
+// in float height;
 out vec3 color;
 
 uniform sampler2D sun_texture;

@@ -34,8 +34,8 @@ class Mesh{
         Mesh();
 
         std::vector<unsigned short> getIndices();
-
-        void loadToGpu(GLuint prog_id);
+        void initBuffers();
+        void loadToGpu();
         void draw();
 
 };

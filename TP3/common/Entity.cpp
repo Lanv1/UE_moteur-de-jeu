@@ -4,13 +4,12 @@ Entity::Entity(){
 
 }
 
+Entity::Entity(Mesh m, char* n): entity_mesh(m), name(n){}
+
 void Entity::addMesh(Mesh m){
     entity_mesh = m;
 }
 
-void Entity::addTransformation(Transform t){
-    transform = t;
-}
 
 void Entity::addChild(Entity& child){
     children.push_back(&child);
