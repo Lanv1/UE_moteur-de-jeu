@@ -31,6 +31,14 @@ std::vector<unsigned short> Mesh::getIndices(){
     return indices;
 }
 
+std::vector<std::vector<unsigned short>> Mesh::getTriangles(){
+    return triangles;
+}
+
+std::vector<glm::vec3> Mesh::getVertices(){
+    return vertices;
+}
+
 void Mesh::loadToGpu(){
 
     // 1rst attribute buffer : vertices

@@ -12,6 +12,7 @@ uniform mat4 model;
 out vec2 UV;
 out float height;
 uniform int tex_to_use;
+uniform bool using_height;
 
 uniform sampler2D height_sampler;
 
@@ -19,12 +20,16 @@ uniform sampler2D sun_texture;
 uniform sampler2D earth_texture;
 uniform sampler2D moon_texture;
 
-
+out vec3 height_offset;
 void main(){
-
         height = texture(height_sampler, vertexUV).r;
+
+        height_offset = vec3(0., 0, 0);
+        if(using_height){
+                height_offset.z = height;
+        }
         // TODO : Output position of the vertex, in clip space : MVP * position
-        gl_Position = (projection * view * model) * vec4(vertices_position_modelspace + vec3(0, 0, height), 1);
+        gl_Position = (projection * view * model) * vec4(vertices_position_modelspace + height_offset, 1);
         UV = vertexUV;
 }
 
