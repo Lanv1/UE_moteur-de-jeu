@@ -49,6 +49,7 @@ float camera_angle_Y = 0.;
 
 // ball movement
 glm::vec3 ball_translation;
+bool update_mvmt = true;
 
 // calcule les uv de la sphère et les stock dans uvs
 void compute_sphere_uv(std::vector<glm::vec3> vertices, std::vector<glm::vec2>& uvs)
@@ -135,6 +136,7 @@ int main( void )
     GLuint projection_handle = glGetUniformLocation(programID, "projection");
     GLuint using_tex_handle = glGetUniformLocation(programID, "tex_to_use");
     GLuint using_height_handle = glGetUniformLocation(programID, "using_height");
+    GLuint ball_height_handle = glGetUniformLocation(programID, "ball_height_UV");
 
     /****************************************/
     //Mesh ARRAYS
@@ -163,15 +165,14 @@ int main( void )
     // Get a handle for our "LightPosition" uniform
     GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
     
-    float _scale = 20;
+    float terrain_size = 5;
     Mesh terrain;
-    terrain.generatePlan(1, 1, vec3(0, 0, 0.), 32);
+    terrain.generatePlan(terrain_size, terrain_size, vec3(0, 0, 0.), 50);
     Entity terrain_entity(terrain, (char *) "terrain");
     terrain.initBuffers();
 
-    camera_position += vec3(0, _scale/5, _scale);
+    camera_position += vec3(0, terrain_size/5, terrain_size);
     //TERRAIN TRANSFORMATIONS SETUP
-    terrain_entity.transform.scale = vec3(_scale, _scale, _scale);
     terrain_entity.transform.rot.x = 90;
     terrain_entity.updateSelfAndChild();
 
@@ -179,6 +180,8 @@ int main( void )
     Mesh ball(indexed_vertices, triangles, vert_uv);
     Entity ball_entity(ball, (char * ) "ball");
     ball.initBuffers();
+
+    ball_entity.transform.scale = vec3(0.2, 0.2 , 0.2);
     // terrain_entity.addChild(ball_entity);
     
     //Naviguer a travers le SCENE GRAPH
@@ -198,48 +201,19 @@ int main( void )
     }
 
 
-        std::vector<glm::vec3> vertices = terrain.getVertices();
-        int tri_index = 0;   
-        //LOURD
-        for(std::vector<unsigned short> tri : terrain.getTriangles()){
-            glm::vec2 _v1(vertices[tri[0]].x, vertices[tri[0]].y);
-            glm::vec2 _v2(vertices[tri[1]].x, vertices[tri[1]].y);
-            glm::vec2 _v3(vertices[tri[2]].x, vertices[tri[2]].y);
+    std::vector<glm::vec3> vertices = terrain.getVertices();
+    std::vector<glm::vec2> terrain_uv = terrain.getUv();
+    int tri_index;      
 
-            // std::cout<<"tri to test: a"<<_v1.x<<", "<<_v1.y<<std::endl;
-            // std::cout<<"tri to test: b"<<_v2.x<<", "<<_v2.y<<std::endl;
-            // std::cout<<"tri to test: c"<<_v3.x<<", "<<_v3.y<<std::endl;
-            Triangle2D t(_v1, _v2, _v3);
-            glm::vec4 ball_pos_matrix = ball_entity.transform.modelMatrix[3];
-            glm::vec2 ball_pos(ball_pos_matrix.x, ball_pos_matrix.z);
-
-            // std::cout<<"BALL POS "<<ball_pos.x<<", "<<ball_pos.y<<std::endl;
-
-            float barycentric[3];
-            t.compute_barycentric(ball_pos, barycentric);
-            bool is_inside = true;
-            float sum = 0;
-            for(int i = 0; i < 3; i ++){
-                // std::cout<<"BARY "<<barycentric[i]<<std::endl;
-                sum += barycentric[i];
-                if(barycentric[i] <= 0)
-                    is_inside = false;
-            }
-
-            is_inside = is_inside && (sum <= 1);
-            if(is_inside)
-                std::cout<<"ball is on top of triangle "<<tri_index<<std::endl;
-
-            tri_index ++;
-            // glm::vec2 proj2D_ball_pos = ball_entity.transform.modelMatrix[]
-        }     
+    // UVS des sommets composant le triangle
+    float tri_uvs[6];   // 3 uvs
+    
 
     // For speed computation
     double lastTime = glfwGetTime();
     int nbFrames = 0;
 
     bool tst = true;
-
     do{
         
         // Measure speed
@@ -286,39 +260,50 @@ int main( void )
         glUniform1i(using_height_handle, true);
         terrain.loadToGpu();
         terrain.draw();
+        
+        if(update_mvmt){
+            update_mvmt = false;
 
-        // int tri_index = 0;   
-        // //LOURD
-        // for(std::vector<unsigned short> tri : ball.getTriangles()){
-        //     std::vector<glm::vec3> vertices = ball.getVertices();
-        //     glm::vec2 _v1(vertices[tri[0]].x, vertices[tri[0]].z);
-        //     glm::vec2 _v2(vertices[tri[1]].x, vertices[tri[1]].z);
-        //     glm::vec2 _v3(vertices[tri[2]].x, vertices[tri[2]].z);
+            tri_index = 0;   
+            for(std::vector<unsigned short> tri : terrain.getTriangles()){
+                // std::cout<<"TRI N"<<tri_index<<std::endl;
+                glm::vec3 _v1(vertices[tri[0]].x, vertices[tri[0]].y, vertices[tri[0]].z);
+                glm::vec3 _v2(vertices[tri[1]].x, vertices[tri[1]].y, vertices[tri[1]].z);
+                glm::vec3 _v3(vertices[tri[2]].x, vertices[tri[2]].y, vertices[tri[2]].z);
 
-        //     Triangle2D t(_v1, _v2, _v3);
-        //     glm::vec4 ball_pos_matrix = ball_entity.transform.modelMatrix[3];
-        //     glm::vec2 ball_pos(ball_pos_matrix.x, ball_pos_matrix.z);
+                Triangle t(_v1, _v2, _v3);
+                glm::vec4 ball_pos_matrix = ball_entity.transform.modelMatrix[3];
+                glm::vec3 ball_pos(ball_pos_matrix.x, ball_pos_matrix.z, 0);
 
-        //     std::cout<<"BALL POS "<<ball_pos.x<<", "<<ball_pos.y<<std::endl;
+                // std::cout<<"BALL POS "<<ball_pos.x<<", "<<ball_pos.y<<std::endl;
 
-        //     float barycentric[3];
-        //     t.compute_barycentric(ball_pos, barycentric);
-        //     bool is_inside = true;
+                if(t.point_in_triangle(ball_pos)){
+                    std::cout<<"ball is on top of triangle "<<tri_index<<std::endl;
+                    glm::vec2 U = terrain_uv[tri[0]];
+                    glm::vec2 V = terrain_uv[tri[1]];
+                    glm::vec2 W = terrain_uv[tri[2]];
 
-        //     for(int i = 0; i < 3; i ++){
-        //         // std::cout<<"BARY "<<barycentric[i]<<std::endl;
-        //         if(barycentric[i] < 0)
-        //             is_inside = false;
-        //     }
+                    tri_uvs[0] = U.x;
+                    tri_uvs[1] = U.y;
+                    tri_uvs[2] = V.x;
+                    tri_uvs[3] = V.y;
+                    tri_uvs[4] = W.x;
+                    tri_uvs[5] = W.y;
 
-        //     is_inside == is_inside && ((barycentric[0] + barycentric[0] + barycentric[0]) <= 1);
-        //     // if(is_inside)
-        //     //     std::cout<<"ball is on top of triangle "<<tri_index<<std::endl;
+                    //DEBUG
+                    // for(int i = 0; i < 6; i++){
+                    //     std::cout<<"UV["<<i<<"] = "<<tri_uvs[i]<<std::endl; 
+                    // }
+                }
+                
+                tri_index ++;
 
-        //     tri_index ++;
-        //     // glm::vec2 proj2D_ball_pos = ball_entity.transform.modelMatrix[]
-        // }    
+            }
 
+            glUniform2fv(ball_height_handle, 3, &tri_uvs[0]);
+        }
+        
+        
         ball_entity.transform.setLocalPosition(ball_translation);
         ball_entity.updateSelfAndChild();
         Model = ball_entity.transform.modelMatrix;
@@ -359,16 +344,21 @@ void processInput(GLFWwindow *window)
 
     float cameraSpeed = 2.5 * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
-        ball_translation += glm::vec3(0, 0, -0.02);
+        ball_translation += glm::vec3(0, 0, -0.04);
+        update_mvmt = true;        
+
     }
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
-        ball_translation += glm::vec3(0, 0, 0.02);
+        ball_translation += glm::vec3(0, 0, 0.04);
+        update_mvmt = true;        
     }
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
-        ball_translation += glm::vec3(-0.02, 0, 0);
+        ball_translation += glm::vec3(-0.04, 0, 0);
+        update_mvmt = true;        
     }
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
-        ball_translation += glm::vec3(0.02, 0, 0);
+        ball_translation += glm::vec3(0.04, 0, 0);
+        update_mvmt = true;        
     }
 
 
@@ -393,7 +383,7 @@ void processInput(GLFWwindow *window)
     }
 
     if(glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS){
-        camera_angle_Y -= cameraSpeed * 0.5;        
+        camera_angle_Y -= cameraSpeed * 0.5;
     }
 
     if(glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS){

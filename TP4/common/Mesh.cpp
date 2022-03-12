@@ -39,6 +39,10 @@ std::vector<glm::vec3> Mesh::getVertices(){
     return vertices;
 }
 
+std::vector<glm::vec2> Mesh::getUv(){
+    return uv;
+}
+
 void Mesh::loadToGpu(){
 
     // 1rst attribute buffer : vertices
@@ -116,8 +120,8 @@ void Mesh::initBuffers(){
 // MISCELLANOUS: fonctions de génération de plan (vertices, triangles)
 void generateVertices(std::vector<glm::vec3> &indexed_vertices, std::vector<glm::vec2> &uv, int w, int h, glm::vec3 pos, int res){
     float current_x, current_y;
-    float x_step = (float) w / (float) res;
-    float y_step = (float) h / (float) res;
+    float x_step = (float) w / ((float) res -1);
+    float y_step = (float) h / ((float) res -1);
 
     int array_index;
     glm::vec3 vert;
@@ -126,11 +130,10 @@ void generateVertices(std::vector<glm::vec3> &indexed_vertices, std::vector<glm:
         current_x = i * x_step;
 
         for(unsigned short j = 0; j < res; j ++) {
-
             array_index = (i * res + j);
             current_y = j*y_step;
-            vert = glm::vec3(pos.x-(float) w/2, pos.y-(float) h/2, 0) + glm::vec3(current_x, current_y, 0);       // CENTERING VERTICES
 
+            vert = glm::vec3(pos.x-((float) w/2), pos.y-((float) h/2), 0) + glm::vec3(current_x, current_y, 0);       // CENTERING VERTICES
             uv.resize(uv.size() + 1);
             uv[array_index] = glm::vec2((float) i/ (float) res, (float) j/ (float)res);
             
