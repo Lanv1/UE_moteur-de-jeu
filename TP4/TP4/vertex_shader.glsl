@@ -16,14 +16,10 @@ uniform vec2 ball_height_UV[3];
 
 uniform sampler2D height_sampler;
 
-uniform sampler2D sun_texture;
-uniform sampler2D earth_texture;
-uniform sampler2D moon_texture;
-
 out vec3 height_offset;
 void main(){
-        float amplitude = 5;
-        float offset = -0.1;
+        float amplitude = 4;
+        float offset = -0.15;
         float sum_height = 0; //offset
         sum_height += texture(height_sampler, ball_height_UV[0]).r;
         sum_height += texture(height_sampler, ball_height_UV[1]).r;

@@ -18,7 +18,8 @@ void main(){
                 //terrain
                 color = vec3(height, height, height);
         }else{
-                color = texture(sun_texture, UV).rgb; 
+                // color = texture(sun_texture, UV).rgb; 
+                color = height * vec3(1, 0, 0); 
         }
         // color = 
         // color = height * vec3(0.2, 0, 0);

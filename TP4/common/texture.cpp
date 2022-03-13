@@ -70,7 +70,6 @@ GLuint loadBMP_custom(const char * imagepath, int tex_id=0, int uniform_loc=0){
 	
 
 	// enable multiple textures
-	glUniform1i(uniform_loc, tex_id);
 	glActiveTexture(GL_TEXTURE0 + tex_id);
 	
 	// "Bind" the newly created texture : all future texture functions will modify this texture
@@ -93,6 +92,7 @@ GLuint loadBMP_custom(const char * imagepath, int tex_id=0, int uniform_loc=0){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	// ... which requires mipmaps. Generate them automatically.
 	glGenerateMipmap(GL_TEXTURE_2D);
+	glUniform1i(uniform_loc, tex_id);// ok tant que pas beaucoup de textures (tex_unit < nombres de textures que l'on veut stocker)
 
 	// Return the ID of the texture we just created
 	return textureID;

@@ -139,6 +139,8 @@ class Mesh{
         void initBuffers();
         void loadToGpu();
         void draw();
+
+        static Mesh simplify(int, Mesh);
         
 };
 

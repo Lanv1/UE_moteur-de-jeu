@@ -158,7 +158,7 @@ int main( void )
     GLuint height0 = loadBMP_custom("../heightMap/Heightmap_Mountain.bmp", 3, heightmap);
 
     //SPHERE MESH
-    loadOFF("../OFF/sphere.off", indexed_vertices, indices, triangles);
+    loadOFF("../OFF/robot_wheeled.off", indexed_vertices, indices, triangles);
     compute_sphere_uv(indexed_vertices, vert_uv);
     
 
@@ -182,8 +182,24 @@ int main( void )
     ball.initBuffers();
 
     ball_entity.transform.scale = vec3(0.2, 0.2 , 0.2);
-    // terrain_entity.addChild(ball_entity);
+    ball_entity.transform.rot.y = 90;
+    ball_entity.updateSelfAndChild();
     
+    //TODO SIMPLIFICATION PAS OK
+    //SIMPLIFIED MESH
+    Mesh simplif_mesh = Mesh::simplify(10, ball);
+
+    for(glm::vec3 vert : simplif_mesh.getVertices())
+    {
+        std::cout<<"SIMPLIFIED VERTICES "<<vert.x<<", "<<vert.y<<", "<<vert.z<<std::endl;
+    }
+    for(std::vector<unsigned short> tri : simplif_mesh.getTriangles())
+    {
+        std::cout<<"SIMPLIFIED TRIANGLES "<<tri[0]<<", "<<tri[1]<<", "<<tri[2]<<std::endl;
+    }
+    Entity simplif_entity(simplif_mesh, (char *) "mesh simplified");
+    simplif_mesh.initBuffers();
+
     //Naviguer a travers le SCENE GRAPH
     Entity* current_entity = &terrain_entity;
     while(current_entity != nullptr){
@@ -305,12 +321,21 @@ int main( void )
         
         
         ball_entity.transform.setLocalPosition(ball_translation);
+        ball_entity.transform.rot.y = angle;
         ball_entity.updateSelfAndChild();
         Model = ball_entity.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_height_handle, false);
         ball.loadToGpu();
-        ball.draw();   
+        ball.draw();
+
+        //TODO SIMPLIFICATION PAS OK
+        // Model = simplif_entity.transform.modelMatrix;
+        // glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
+        // glUniform1i(using_height_handle, false);
+        // simplif_mesh.loadToGpu();
+        // simplif_mesh.draw();
+
 
 
         angle += rota_speed;
