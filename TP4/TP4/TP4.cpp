@@ -33,9 +33,11 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
+bool camera_TPS = false;
 glm::vec3 camera_position   = glm::vec3(0.0f, 0.0f,  0.f);
 glm::vec3 camera_target = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 camera_up    = glm::vec3(0.0f, 1.0f,  0.0f);
+bool camera_moved = false;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -157,13 +159,11 @@ int main( void )
     GLuint tex2 = loadBMP_custom("../texture/moon.bmp", 3, moon_loc);
     GLuint height0 = loadBMP_custom("../heightMap/Heightmap_Mountain.bmp", 3, heightmap);
 
-    //SPHERE MESH
+    //CUSTOM MESH
     loadOFF("../OFF/robot_wheeled.off", indexed_vertices, indices, triangles);
     compute_sphere_uv(indexed_vertices, vert_uv);
     
 
-    // Get a handle for our "LightPosition" uniform
-    GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
     
     float terrain_size = 5;
     Mesh terrain;
@@ -177,28 +177,38 @@ int main( void )
     terrain_entity.updateSelfAndChild();
 
 
+    // MESH LOADED
     Mesh ball(indexed_vertices, triangles, vert_uv);
-    Entity ball_entity(ball, (char * ) "ball");
-    ball.initBuffers();
+    Entity ball_entity;
 
-    ball_entity.transform.scale = vec3(0.2, 0.2 , 0.2);
-    ball_entity.transform.rot.y = 90;
-    ball_entity.updateSelfAndChild();
-    
-    //TODO SIMPLIFICATION PAS OK
-    //SIMPLIFIED MESH
-    Mesh simplif_mesh = Mesh::simplify(10, ball);
+    //CAMERA
+    Entity camera_entity;
 
-    for(glm::vec3 vert : simplif_mesh.getVertices())
+    ball_entity.addChild(camera_entity);
+    camera_entity.transform.setLocalPosition(glm::vec3(0, 2, 2));
+    camera_entity.updateSelfAndChild();
+
+    struct mesh_lod
     {
-        std::cout<<"SIMPLIFIED VERTICES "<<vert.x<<", "<<vert.y<<", "<<vert.z<<std::endl;
-    }
-    for(std::vector<unsigned short> tri : simplif_mesh.getTriangles())
-    {
-        std::cout<<"SIMPLIFIED TRIANGLES "<<tri[0]<<", "<<tri[1]<<", "<<tri[2]<<std::endl;
-    }
-    Entity simplif_entity(simplif_mesh, (char *) "mesh simplified");
-    simplif_mesh.initBuffers();
+        Mesh low;
+        Mesh medium;
+        Mesh high;
+    };
+
+    //LOD SETUP
+    mesh_lod ball_lod;
+    ball_lod.low = Mesh::simplify(8, ball);
+    ball_lod.medium = Mesh::simplify(15, ball);
+    ball_lod.high = Mesh::simplify(32, ball);
+
+    ball_lod.low.compute_normals();
+    ball_lod.medium.compute_normals();
+    ball_lod.high.compute_normals();
+
+    ball_lod.low.initBuffers();
+    ball_lod.medium.initBuffers();
+    ball_lod.high.initBuffers();
+
 
     //Naviguer a travers le SCENE GRAPH
     Entity* current_entity = &terrain_entity;
@@ -225,10 +235,10 @@ int main( void )
     float tri_uvs[6];   // 3 uvs
     
 
+    glm::vec4 OBJ_POS;
     // For speed computation
     double lastTime = glfwGetTime();
     int nbFrames = 0;
-
     bool tst = true;
     do{
         
@@ -243,33 +253,10 @@ int main( void )
         // -----
         processInput(window);
 
-
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 View;
-        // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
-        // if(tst)
-        View = glm::lookAt( camera_position, camera_target + camera_position, camera_up); 
-        glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
-        
-        View = glm::translate(View, camera_position);    // parametrage camera orbitale
-        // View = glm::rotate(View, camera_angle_X, vec3(1, 0, 0));    // parametrage camera orbitale
-        View = glm::rotate(View, (float) 44.5,vec3(1, 0, 0));
-        View = glm::translate(View, -camera_position);    // parametrage camera orbitale
-
-        View = glm::translate(View, camera_position);    // parametrage camera orbitale
-        View = glm::rotate(View, camera_angle_Y, vec3(0, 1, 0));
-        View = glm::translate(View, -camera_position);    // parametrage camera orbitale
-
-        
-        //PROJECTION et VIEW (caméra)
-        glUniformMatrix4fv(projection_handle, 1, GL_FALSE, &Projection[0][0]);
-        glUniformMatrix4fv(view_handle, 1, GL_FALSE, &View[0][0]);
-
         //MODEL
-        // terrain_entity.transform.rot.x = angle; 
-        // terrain_entity.updateSelfAndChild();
         glm::mat4 Model = terrain_entity.transform.modelMatrix;
         
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
@@ -278,8 +265,12 @@ int main( void )
         terrain.draw();
         
         if(update_mvmt){
-            update_mvmt = false;
 
+            //BALL POS WORLD
+            // glm::vec4 OBJ_POS = ball_entity.transform.modelMatrix[3];
+            // std::cout<<OBJ_POS.x<<", "<<OBJ_POS.y<<", "<<OBJ_POS.z<<std::endl;
+            // float dist_cam_obj = sqrt((OBJ_POS.x - camera_position.x)*(OBJ_POS.x - camera_position.x) + (OBJ_POS.y - camera_position.y)*(OBJ_POS.y - camera_position.y) + (OBJ_POS.z - camera_position.z)*(OBJ_POS.z - camera_position.z));
+            // std::cout<<"DISTANCE OBJ CAM "<<dist_cam_obj<<std::endl;
             tri_index = 0;   
             for(std::vector<unsigned short> tri : terrain.getTriangles()){
                 // std::cout<<"TRI N"<<tri_index<<std::endl;
@@ -294,7 +285,7 @@ int main( void )
                 // std::cout<<"BALL POS "<<ball_pos.x<<", "<<ball_pos.y<<std::endl;
 
                 if(t.point_in_triangle(ball_pos)){
-                    std::cout<<"ball is on top of triangle "<<tri_index<<std::endl;
+                    // std::cout<<"ball is on top of triangle "<<tri_index<<std::endl;
                     glm::vec2 U = terrain_uv[tri[0]];
                     glm::vec2 V = terrain_uv[tri[1]];
                     glm::vec2 W = terrain_uv[tri[2]];
@@ -319,26 +310,64 @@ int main( void )
             glUniform2fv(ball_height_handle, 3, &tri_uvs[0]);
         }
         
+        if(update_mvmt || camera_moved){
+            camera_moved = false;
+            update_mvmt = false;
+
+            OBJ_POS = ball_entity.transform.modelMatrix[3];
+            float dist_cam_obj = sqrt((OBJ_POS.x - camera_position.x)*(OBJ_POS.x - camera_position.x) + (OBJ_POS.y - camera_position.y)*(OBJ_POS.y - camera_position.y) + (OBJ_POS.z - camera_position.z)*(OBJ_POS.z - camera_position.z));
+            // std::cout<<"DISTANCE OBJ CAM "<<dist_cam_obj<<std::endl;
+
+            //
+            if(dist_cam_obj >= 8){
+                ball_entity.setMesh(ball_lod.low);
+            }else if(dist_cam_obj > 5){
+                ball_entity.setMesh(ball_lod.medium);
+            }else{
+                ball_entity.setMesh(ball_lod.high);
+            }
         
+        
+        }
+
         ball_entity.transform.setLocalPosition(ball_translation);
-        ball_entity.transform.rot.y = angle;
+        ball_entity.transform.scale = glm::vec3(0.2, 0.2, 0.2);
+        ball_entity.transform.rot.y = 90 + angle;
         ball_entity.updateSelfAndChild();
+        glm::mat4 trans_mat(1.f);
+        trans_mat = glm::rotate(trans_mat, angle, glm::vec3(0, 1, 0));
+        trans_mat = glm::translate(trans_mat, ball_translation);
+
+        // ball_entity.transform.printModelMatrix();
         Model = ball_entity.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_height_handle, false);
-        ball.loadToGpu();
-        ball.draw();
+        ball_entity.getMesh().loadToGpu();
+        ball_entity.getMesh().draw();
 
-        //TODO SIMPLIFICATION PAS OK
-        // Model = simplif_entity.transform.modelMatrix;
-        // glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
-        // glUniform1i(using_height_handle, false);
-        // simplif_mesh.loadToGpu();
-        // simplif_mesh.draw();
+        glm::mat4 View;
+        // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
+        if(camera_TPS)
+            camera_position = glm::vec3(OBJ_POS.x, OBJ_POS.y, OBJ_POS.z) + glm::vec3(0, 1, 2);
+        View = glm::lookAt( camera_position, camera_target + camera_position, camera_up); 
+        glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
+        
+        View = glm::translate(View, camera_position);    // parametrage camera orbitale
+        // View = glm::rotate(View, camera_angle_X, vec3(1, 0, 0));    // parametrage camera orbitale
+        View = glm::rotate(View, (float) 44.5,vec3(1, 0, 0));
+        View = glm::translate(View, -camera_position);    // parametrage camera orbitale
+
+        View = glm::translate(View, camera_position);    // parametrage camera orbitale
+        View = glm::rotate(View, camera_angle_Y, vec3(0, 1, 0));
+        View = glm::translate(View, -camera_position);    // parametrage camera orbitale
+
+        // std::cout<<"CAMERA POS "<<camera_position.x<<", "<<camera_position.y<<", "<<camera_position.z<<std::endl;
+        //PROJECTION et VIEW (caméra)
+        glUniformMatrix4fv(projection_handle, 1, GL_FALSE, &Projection[0][0]);
+        glUniformMatrix4fv(view_handle, 1, GL_FALSE, &View[0][0]);
 
 
-
-        angle += rota_speed;
+        // angle += rota_speed;
         /****************************************/
 
         // Swap buffers
@@ -383,28 +412,34 @@ void processInput(GLFWwindow *window)
     }
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
         ball_translation += glm::vec3(0.04, 0, 0);
+
         update_mvmt = true;        
     }
 
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
         camera_position += cameraSpeed * camera_target;
+        camera_moved = true;
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
         camera_position -= cameraSpeed * camera_target;
+        camera_moved = true;
 
     }
 
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
 
-        camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
+        // camera_position -= glm::vec3(cameraSpeed, 0, 0) ;
+        camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+        camera_moved = true;
 
     }
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
+        camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
 
-        camera_position += glm::vec3(cameraSpeed, 0, 0);
- 
+        // camera_position += glm::vec3(cameraSpeed, 0, 0);
+        camera_moved = true;
+
     }
 
     if(glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS){
@@ -420,6 +455,10 @@ void processInput(GLFWwindow *window)
 
     if(glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS){
         camera_angle_X -= cameraSpeed * 0.5;        
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS){
+        camera_TPS = !camera_TPS;
     }
 
     

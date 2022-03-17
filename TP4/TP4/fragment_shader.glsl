@@ -5,6 +5,7 @@ in vec2 UV;
 
 
 in float height;
+in vec3 n;
 out vec3 color;
 
 uniform sampler2D sun_texture;
@@ -19,7 +20,8 @@ void main(){
                 color = vec3(height, height, height);
         }else{
                 // color = texture(sun_texture, UV).rgb; 
-                color = height * vec3(1, 0, 0); 
+                // color = height * vec3(1, 0, 0); 
+                color = n;
         }
         // color = 
         // color = height * vec3(0.2, 0, 0);

@@ -6,7 +6,7 @@ Entity::Entity(){
 
 Entity::Entity(Mesh m, char* n): entity_mesh(m), name(n){}
 
-void Entity::addMesh(Mesh m){
+void Entity::setMesh(Mesh m){
     entity_mesh = m;
 }
 
@@ -37,4 +37,10 @@ bool Entity::hasChildren(){
 
 void Entity::setName(char* n){
     name = n;
+
+}
+
+
+Mesh Entity::getMesh(){
+    return entity_mesh;
 }

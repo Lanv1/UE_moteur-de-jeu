@@ -11,6 +11,36 @@ void Mesh::compute_indices(){
     }
 }
 
+void Mesh::compute_normals(){
+    std::vector<glm::vec3> normals_surface;
+    normals_surface.resize(triangles.size());
+
+    int it = 0;
+    glm::vec3 a, b, c;  //normales par triangles
+    for(std::vector<unsigned short> tri_ind : triangles){
+        a = vertices[tri_ind[0]];
+        b = vertices[tri_ind[1]];
+        c = vertices[tri_ind[2]];
+
+        Triangle tri(a, b, c);
+        normals_surface[it] = tri.normal;
+        it ++;
+    }
+    normals.resize(vertices.size());
+    for(int i = 0; i < vertices.size(); i ++){
+        normals[i] = glm::vec3(0.f);
+    }
+
+    //normales aux sommets
+    for(int i = 0; i < triangles.size(); i ++){
+        for(int j = 0; j < 3; j ++){
+
+            normals[triangles[i][j]] += normals_surface[i];
+            normals[triangles[i][j]] = glm::normalize(normals[triangles[i][j]]);
+        }
+    }
+}
+
 Mesh::Mesh(std::vector<glm::vec3> v, std::vector<std::vector<unsigned short>> t){
     vertices = v;
     triangles = t;
@@ -33,6 +63,10 @@ std::vector<unsigned short> Mesh::getIndices(){
 
 std::vector<std::vector<unsigned short>> Mesh::getTriangles(){
     return triangles;
+}
+
+std::vector<glm::vec3> Mesh::getNormals(){
+    return normals;
 }
 
 std::vector<glm::vec3> Mesh::getVertices(){
@@ -69,6 +103,17 @@ void Mesh::loadToGpu(){
             0,                  // stride
             (void*)0            // array buffer offset
     );
+    //Normals 
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.normal);
+    glVertexAttribPointer(
+            2,                  // attribute
+            3,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+    );
 
     // glDisableVertexAttribArray(0);
         
@@ -88,6 +133,7 @@ void Mesh::draw(){
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
 
 }
 
@@ -105,6 +151,12 @@ void Mesh::initBuffers(){
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
+    // Load vertices into a VBO
+    GLuint normalbuffer;
+    glGenBuffers(1, &normalbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+
     // Generate a buffer for the indices as well
     GLuint elementbuffer;
     glGenBuffers(1, &elementbuffer);
@@ -114,6 +166,7 @@ void Mesh::initBuffers(){
     buffers.element = elementbuffer;
     buffers.vertex = vertexbuffer;
     buffers.uv = uvbuffer;
+    buffers.normal = normalbuffer;
 }
 
 
@@ -194,6 +247,7 @@ glm::vec3 get_grid_indexes(glm::vec3 vertex, float min, float step)
 struct rep
 {
     glm::vec3 pos;
+    glm::vec3 normal;
     int size;
 };
 
@@ -201,6 +255,7 @@ Mesh Mesh::simplify(int res, Mesh input)
 {
     std::vector<glm::vec3> input_vert = input.vertices;
     std::vector<std::vector<unsigned short>> input_triangles = input.triangles;
+    
     int input_sz = input_vert.size();
     int input_tri_sz = input_triangles.size();
 
@@ -275,7 +330,6 @@ Mesh Mesh::simplify(int res, Mesh input)
         // Ajout du sommet courant a son représentant
         repr_grid[grid_index].pos += input_vert[i];
         repr_grid[grid_index].size += 1;
-        // repr_grid[grid_index].normal += normals[i];
 
     }
     
@@ -284,7 +338,7 @@ Mesh Mesh::simplify(int res, Mesh input)
     // repr.resize(grid.size());
     
     std::vector<glm::vec3> repr;
-    repr.resize(1);
+    repr.resize(repr_grid.size());
     int insert_at = 0;
     // Stockage des représentants calculés dans repr (moyenne des sommets dans une même cellule)
     for(rep r : repr_grid)
@@ -292,9 +346,8 @@ Mesh Mesh::simplify(int res, Mesh input)
         if(r.size > 0)
         {
             repr[insert_at] = r.pos / (float) r.size;
-            repr.resize(repr.size() + 1);
-            insert_at ++;
         }
+        insert_at ++;
     }
 
     // Liste des triangles re-indexés (survivants)
@@ -353,7 +406,6 @@ Mesh Mesh::simplify(int res, Mesh input)
 
     // triangles = alive;
     // vertices = repr;
-
     return Mesh(repr, alive);
 }
 

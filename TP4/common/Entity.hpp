@@ -98,6 +98,7 @@ class Entity {
     protected:
 
         Mesh entity_mesh;
+        glm::mat4 cam;
 
     public:
         char* name;
@@ -107,7 +108,7 @@ class Entity {
         Entity();
         Entity(Mesh, char*);
         
-        void addMesh(Mesh m);
+        void setMesh(Mesh m);
 
         Transform transform;
 
@@ -118,5 +119,7 @@ class Entity {
         bool hasChildren();
 
         void setName(char*);
+
+        Mesh getMesh();
 };
 #endif

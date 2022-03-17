@@ -12,6 +12,7 @@
 
 struct Buffer{
     GLuint vertex;
+    GLuint normal;
     GLuint element;
     GLuint uv;
 };
@@ -120,8 +121,9 @@ class Mesh{
         std::vector<glm::vec2> uv;
         std::vector<unsigned short> indices; //Triangles concaténés dans une liste (soupe)
         std::vector<std::vector<unsigned short>> triangles;
+        std::vector<glm::vec3> normals;
 
-        void compute_indices();         
+        void compute_indices();
     
     public:
 
@@ -135,11 +137,13 @@ class Mesh{
         void generatePlan(int , int , glm::vec3 , int);
         std::vector<glm::vec3> getVertices();
         std::vector<std::vector<unsigned short>> getTriangles();
+        std::vector<glm::vec3> getNormals();
         std::vector<glm::vec2> getUv();
         void initBuffers();
         void loadToGpu();
         void draw();
 
+        void compute_normals();        
         static Mesh simplify(int, Mesh);
         
 };
