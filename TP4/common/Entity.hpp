@@ -36,10 +36,10 @@ struct Transform {
         const glm::mat4 rotationMatrix = transformY * transformX * transformZ;
           
 
-        // return glm::scale(glm::mat4(1.0f), scale)* 
+        // return  glm::translate(glm::mat4(1.0f), -pos)*
         //         rotationMatrix * 
+        //         glm::scale(glm::mat4(1.0f), scale)*
         //         glm::translate(glm::mat4(1.0f), pos);    // ROTATES AROUND PARENT ENTITY (rotate sur soi-même s'il s'agit d'un entité sans parent)
-        
         
         return glm::scale(glm::mat4(1.0f), scale)* 
                 glm::translate(glm::mat4(1.0f), pos)*    // ROTATES ON SELF AXIS
@@ -47,6 +47,17 @@ struct Transform {
                 
     }
 
+    void apply_rotate(){
+        modelMatrix = glm::rotate(modelMatrix, glm::dot(glm::vec3(1, 1, 1), pos), glm::vec3(0, 1, 0));
+    }
+
+    void apply_translate(){
+        modelMatrix = glm::translate(modelMatrix, pos);
+    }
+
+    void apply_scale(){
+        modelMatrix = glm::scale(modelMatrix, scale);
+    }
 
     void computeModelMatrix(){
     

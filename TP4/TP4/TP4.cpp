@@ -33,7 +33,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
-bool camera_TPS = false;
+bool camera_TPS = true;
 glm::vec3 camera_position   = glm::vec3(0.0f, 0.0f,  0.f);
 glm::vec3 camera_target = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 camera_up    = glm::vec3(0.0f, 1.0f,  0.0f);
@@ -330,13 +330,20 @@ int main( void )
         
         }
 
+        // translate + rota de l'objet wip ...
+        // ball_entity.transform.setLocalPosition(glm::vec3(0., 0.,  ball_translation.z));
+        // ball_entity.transform.scale = glm::vec3(0.2, 0.2, 0.2);
+        // ball_entity.transform.rot.y = 90 - ball_translation.x*10;
+
         ball_entity.transform.setLocalPosition(ball_translation);
         ball_entity.transform.scale = glm::vec3(0.2, 0.2, 0.2);
-        ball_entity.transform.rot.y = 90 + angle;
+        ball_entity.transform.rot.y = 90;
+
         ball_entity.updateSelfAndChild();
+
+        ball_entity.transform.printModelMatrix();
         glm::mat4 trans_mat(1.f);
-        trans_mat = glm::rotate(trans_mat, angle, glm::vec3(0, 1, 0));
-        trans_mat = glm::translate(trans_mat, ball_translation);
+       
 
         // ball_entity.transform.printModelMatrix();
         Model = ball_entity.transform.modelMatrix;
@@ -347,9 +354,15 @@ int main( void )
 
         glm::mat4 View;
         // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
-        if(camera_TPS)
-            camera_position = glm::vec3(OBJ_POS.x, OBJ_POS.y, OBJ_POS.z) + glm::vec3(0, 1, 2);
-        View = glm::lookAt( camera_position, camera_target + camera_position, camera_up); 
+        if(camera_TPS){
+            camera_position = glm::vec3(OBJ_POS.x, OBJ_POS.y, OBJ_POS.z) + glm::vec3(0, 0.4, 2);
+            camera_target = glm::vec3(OBJ_POS) + glm::vec3(0., 1, 0.);
+
+            View = glm::lookAt( camera_position, camera_target, camera_up); 
+        }else{
+            camera_target = glm::vec3(0.0f, 0.0f, -1.0f);
+            View = glm::lookAt( camera_position, camera_target + camera_position, camera_up); 
+        }
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) 4 / (float) 3, 0.1f, 100.0f);
         
         View = glm::translate(View, camera_position);    // parametrage camera orbitale
