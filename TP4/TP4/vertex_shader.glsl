@@ -13,7 +13,6 @@ out vec2 UV;
 out float height;
 out vec3 n;
 
-uniform int tex_to_use;
 uniform bool using_height;
 uniform vec2 ball_height_UV[3];
 
@@ -22,7 +21,7 @@ uniform sampler2D height_sampler;
 out vec3 height_offset;
 void main(){
         float amplitude = 2;
-        float offset = -0.15;
+        float offset = -0.05;
         float sum_height = 0; //offset
         sum_height += texture(height_sampler, ball_height_UV[0]).r;
         sum_height += texture(height_sampler, ball_height_UV[1]).r;
@@ -37,9 +36,9 @@ void main(){
                 sum_height = 0.;
                 gl_Position = (projection * view * model) * vec4(vertices_position_modelspace + height_offset, 1);
         }else{
-                //balle
+
+                //objet
                 height_offset.z = height;                                      
-                // gl_Position = (projection * view * model) * vec4(vertices_position_modelspace - amplitude*vec3(0, offset +sum_height,0) , 1);
                 gl_Position = (projection * view * model) * vec4(vertices_position_modelspace, 1);
                 gl_Position.y  -= amplitude * (offset + sum_height);
         }

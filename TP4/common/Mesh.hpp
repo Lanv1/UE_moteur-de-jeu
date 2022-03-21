@@ -44,37 +44,26 @@ struct Triangle{
             return true;
         }
 
-        // std::cout<<"P= "<<p.x<<", "<<p.y<<", "<<p.z<<std::endl;
-        // std::cout<<"TRI NORMAL= "<<normal.x<<", "<<normal.y<<", "<<normal.z<<std::endl;
         glm::vec3 _a = p-a;
         glm::vec3 _b = p-b;
         glm::vec3 _c = p-c;
-        // std::cout<<"A 1 "<<_a.x<<", "<<_a.y<<", "<<_a.z<<std::endl;
-        // std::cout<<"B 2 "<<_b.x<<", "<<_b.y<<", "<<_b.z<<std::endl;
-        // std::cout<<"C 3 "<<_c.x<<", "<<_c.y<<", "<<_c.z<<std::endl;
-
+        
         //produit vectoriel nul si vecteurs colinéaires 
         glm::vec3 pbc_normal = glm::cross(_b,_c);
         glm::vec3 pca_normal = glm::cross(_c,_a);
         glm::vec3 pab_normal = glm::cross(_a,_b);
 
-        //le point ne peut pas y être contenu dasn le triangle 
+        //le point ne peut pas être contenu dans le triangle 
         glm::vec3 null_vec(0,0,0);
-        if(pbc_normal == null_vec ||pca_normal == null_vec || pab_normal == null_vec)
+        if(pbc_normal == null_vec || pca_normal == null_vec || pab_normal == null_vec)
             return false;
 
         pbc_normal = glm::normalize(pbc_normal);
         pca_normal = glm::normalize(pca_normal);
         pab_normal = glm::normalize(pab_normal);
 
-        // std::cout<<"NORMAL 1 "<<pbc_normal.x<<", "<<pbc_normal.y<<", "<<pbc_normal.z<<std::endl;
-        // std::cout<<"NORMAL 2 "<<pca_normal.x<<", "<<pca_normal.y<<", "<<pca_normal.z<<std::endl;
-        // std::cout<<"NORMAL 3 "<<pab_normal.x<<", "<<pab_normal.y<<", "<<pab_normal.z<<std::endl;
-        // std::cout<<std::endl;
-        if(pbc_normal.z != pca_normal.z)
+        if(pbc_normal != pca_normal)
         {
-            // std::cout<<"pbc normal: "<<pbc_normal.x<<", "<<pbc_normal.y<<", "<<pbc_normal.z<<std::endl;
-            // std::cout<<"pca normal: "<<pca_normal.x<<", "<<pca_normal.y<<", "<<pca_normal.z<<std::endl;
             return false;
         }else if(pbc_normal != pab_normal)
         {
