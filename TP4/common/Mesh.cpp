@@ -78,9 +78,9 @@ std::vector<glm::vec2> Mesh::getUv(){
 }
 
 void Mesh::loadToGpu(){
+    glBindVertexArray(buffers.vao);
 
     // 1rst attribute buffer : vertices
-    glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex);
     glVertexAttribPointer(
             0,                  // attribute
@@ -90,10 +90,10 @@ void Mesh::loadToGpu(){
             0,                  // stride
             (void*)0            // array buffer offset
     );
+    glEnableVertexAttribArray(0);
 
 
     // UVs buffer                   // only for PLANE
-    glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.uv);
     glVertexAttribPointer(
             1,                  // attribute
@@ -103,8 +103,9 @@ void Mesh::loadToGpu(){
             0,                  // stride
             (void*)0            // array buffer offset
     );
+    glEnableVertexAttribArray(1);
+
     //Normals 
-    glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.normal);
     glVertexAttribPointer(
             2,                  // attribute
@@ -114,6 +115,7 @@ void Mesh::loadToGpu(){
             0,                  // stride
             (void*)0            // array buffer offset
     );
+    glEnableVertexAttribArray(2);
 
     // glDisableVertexAttribArray(0);
         
@@ -121,9 +123,8 @@ void Mesh::loadToGpu(){
 
 void Mesh::draw(){
 
-
     // Draw the triangles !
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers.element);
+    glBindVertexArray(buffers.vao);
     glDrawElements(
             GL_TRIANGLES,      // mode
             indices.size(),    // count            // SOUP for plane, INDICES for chairs
@@ -131,31 +132,61 @@ void Mesh::draw(){
             (void*)0           // element array buffer offset
     );
 
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(2);
+    glBindVertexArray(0);
 
 }
 
 void Mesh::initBuffers(){
     
+    //VAO 
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
     // Generate a buffer for UVs
     GLuint uvbuffer;
     glGenBuffers(1, &uvbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
     glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(glm::vec2), &uv[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+        1,                  // attribute
+        2,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(1);
     
     // Load vertices into a VBO
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+        0,                  // attribute
+        3,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(0);
 
-    // Load vertices into a VBO
+    // Load normals into a VBO
     GLuint normalbuffer;
     glGenBuffers(1, &normalbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
     glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+        2,                  // attribute
+        3,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(2);
 
     // Generate a buffer for the indices as well
     GLuint elementbuffer;
@@ -167,6 +198,8 @@ void Mesh::initBuffers(){
     buffers.vertex = vertexbuffer;
     buffers.uv = uvbuffer;
     buffers.normal = normalbuffer;
+    buffers.vao = vao;
+
 }
 
 

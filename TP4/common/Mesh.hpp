@@ -15,6 +15,8 @@ struct Buffer{
     GLuint normal;
     GLuint element;
     GLuint uv;
+
+    GLuint vao;
 };
 
 struct Triangle{

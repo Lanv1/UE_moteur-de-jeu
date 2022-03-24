@@ -33,7 +33,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
-bool camera_TPS = true;
+bool camera_TPS = false;
 glm::vec3 camera_position   = glm::vec3(0.0f, 0.0f,  0.f);
 glm::vec3 camera_target = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 camera_up    = glm::vec3(0.0f, 1.0f,  0.0f);
@@ -126,9 +126,9 @@ int main( void )
     //glEnable(GL_CULL_FACE);
 
     // VAO
-    GLuint VertexArrayID;
-    glGenVertexArrays(1, &VertexArrayID);
-    glBindVertexArray(VertexArrayID);
+    // GLuint VertexArrayID;
+    // glGenVertexArrays(1, &VertexArrayID);
+    // glBindVertexArray(VertexArrayID);
 
     // Create and compile our GLSL program from the shaders
     GLuint programID = LoadShaders( "vertex_shader.glsl", "fragment_shader.glsl" );
@@ -164,6 +164,7 @@ int main( void )
     Mesh terrain;
     terrain.generatePlan(terrain_size, terrain_size, vec3(0, 0, 0.), 100);
     Entity terrain_entity(terrain, (char *) "terrain");
+    terrain.compute_normals();
     terrain.initBuffers();
 
     camera_position += vec3(0, terrain_size/5, terrain_size);
@@ -233,7 +234,7 @@ int main( void )
         
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_height_handle, true);
-        terrain.loadToGpu();
+
         terrain.draw();
         
         // Calcul du triangle sur lequel l'objet est
@@ -293,7 +294,6 @@ int main( void )
         
         }
 
-
         ball_entity.transform.setLocalPosition(ball_translation);
         ball_entity.transform.scale = glm::vec3(obj_scale, obj_scale, obj_scale);
         ball_entity.transform.rot.y = 90;
@@ -302,7 +302,6 @@ int main( void )
         Model = ball_entity.transform.modelMatrix;
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(using_height_handle, false);
-        ball_entity.getMesh().loadToGpu();
         ball_entity.getMesh().draw();
 
         glm::mat4 View;
@@ -348,7 +347,7 @@ int main( void )
 
     // Cleanup VBO and shader
     glDeleteProgram(programID);
-    glDeleteVertexArrays(1, &VertexArrayID);
+    // glDeleteVertexArrays(1, &);
 
     // Close OpenGL window and terminate GLFW
     glfwTerminate();
