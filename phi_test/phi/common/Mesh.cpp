@@ -1,0 +1,513 @@
+#include "Mesh.hpp"
+
+void Mesh::compute_indices(){
+    indices.resize(3 * triangles.size());
+    int k = 0;
+    for(int i = 0; i < triangles.size(); i ++){
+        indices[k] = triangles[i][0]; 
+        indices[k + 1] = triangles[i][1]; 
+        indices[k + 2] = triangles[i][2]; 
+        k += 3;
+    }
+}
+
+void Mesh::compute_normals(){
+    std::vector<glm::vec3> normals_surface;
+    normals_surface.resize(triangles.size());
+
+    int it = 0;
+    glm::vec3 a, b, c;  //normales par triangles
+    for(std::vector<unsigned short> tri_ind : triangles){
+        a = vertices[tri_ind[0]];
+        b = vertices[tri_ind[1]];
+        c = vertices[tri_ind[2]];
+
+        Triangle tri(a, b, c);
+        normals_surface[it] = tri.normal;
+        it ++;
+    }
+    normals.resize(vertices.size());
+    for(int i = 0; i < vertices.size(); i ++){
+        normals[i] = glm::vec3(0.f);
+    }
+
+    //normales aux sommets
+    for(int i = 0; i < triangles.size(); i ++){
+        for(int j = 0; j < 3; j ++){
+
+            normals[triangles[i][j]] += normals_surface[i];
+            normals[triangles[i][j]] = glm::normalize(normals[triangles[i][j]]);
+        }
+    }
+}
+
+void Mesh::compute_boundingBox(){
+    //Recherche des points mi et max du maillage
+    glm::vec3 min = vertices[0];
+    glm::vec3 max = vertices[0];
+
+    for(glm::vec3 vert: vertices){
+        for(int i = 0; i < 3; i ++)
+        {
+            max[i] = vert[i] > max[i]? vert[i] : max[i];
+            min[i] = vert[i] < min[i]? vert[i] : min[i];
+        }
+        // if(vert.x >= max.x && vert.y >= max.y && vert.z >= max.z){
+        //     max = vert;
+        // }
+
+        // if(vert.x <= min.x && vert.y <= min.y && vert.z <= min.z){
+        //     min = vert;
+        // }
+    }
+
+    std::cout<<"MIN PT: "<<min.x<<", "<<min.y<<", "<<min.z<<std::endl;
+    std::cout<<"MAX PT: "<<max.x<<", "<<max.y<<", "<<max.z<<std::endl;
+
+    boundingBox = AABB(min, max);
+}
+
+Mesh::Mesh(std::vector<glm::vec3> v, std::vector<std::vector<unsigned short>> t){
+    vertices = v;
+    triangles = t;
+
+    compute_indices();
+}
+
+Mesh::Mesh(std::vector<glm::vec3> v, std::vector<std::vector<unsigned short>> t, std::vector<glm::vec2> uvs){
+    vertices = v;
+    triangles = t;
+    uv = uvs;
+    compute_indices();
+}
+
+Mesh::Mesh(){}
+
+std::vector<unsigned short> Mesh::getIndices(){
+    return indices;
+}
+
+std::vector<std::vector<unsigned short>> Mesh::getTriangles(){
+    return triangles;
+}
+
+std::vector<glm::vec3> Mesh::getNormals(){
+    return normals;
+}
+
+std::vector<glm::vec3> Mesh::getVertices(){
+    return vertices;
+}
+
+std::vector<glm::vec2> Mesh::getUv(){
+    return uv;
+}
+
+void Mesh::loadToGpu(){
+    glBindVertexArray(buffers.vao);
+
+    // 1rst attribute buffer : vertices
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex);
+    glVertexAttribPointer(
+            0,                  // attribute
+            3,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(0);
+
+
+    // UVs buffer                   // only for PLANE
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.uv);
+    glVertexAttribPointer(
+            1,                  // attribute
+            2,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(1);
+
+    //Normals 
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.normal);
+    glVertexAttribPointer(
+            2,                  // attribute
+            3,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(2);
+
+    // glDisableVertexAttribArray(0);
+        
+}
+
+void Mesh::renderBbox()
+{
+    glm::vec3 min = boundingBox.getMin();
+    // std::cout<<"MIN PT?: "<<min.x<<", "<<min.y<<", "<<min.z<<std::endl;
+
+    glm::vec3 xyz = 2.f * boundingBox.extents;
+
+    std::vector<glm::vec3> box_vert;
+    box_vert.push_back(min);
+    box_vert.push_back(min + glm::vec3(xyz.x, 0, 0));
+    box_vert.push_back(min + glm::vec3(xyz.x, 0, xyz.z));
+    box_vert.push_back(min + glm::vec3(0, 0, xyz.z));
+    
+    box_vert.push_back(min + glm::vec3(0, xyz.y, 0));
+    box_vert.push_back(min + glm::vec3(xyz.x, xyz.y, 0));
+    box_vert.push_back(min + glm::vec3(xyz.x, xyz.y, xyz.z));
+    box_vert.push_back(min + glm::vec3(0, xyz.y, xyz.z));
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    GLuint vertexbuffer;
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, box_vert.size() * sizeof(glm::vec3), &box_vert[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+        0,                  // attribute
+        3,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glDrawArrays(GL_POINTS, 0, 8);
+
+
+    
+}
+
+void Mesh::draw(){
+
+    // Draw the triangles !
+    glBindVertexArray(buffers.vao);
+    glDrawElements(
+            GL_TRIANGLES,      // mode
+            indices.size(),    // count            // SOUP for plane, INDICES for chairs
+            GL_UNSIGNED_SHORT,   // type
+            (void*)0           // element array buffer offset
+    );
+
+    glBindVertexArray(0);
+
+}
+
+void Mesh::initBuffers(){
+    
+    //VAO 
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    // Generate a buffer for UVs
+    GLuint uvbuffer;
+    glGenBuffers(1, &uvbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(glm::vec2), &uv[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+        1,                  // attribute
+        2,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(1);
+    
+    // Load vertices into a VBO
+    GLuint vertexbuffer;
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+        0,                  // attribute
+        3,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(0);
+
+    // Load normals into a VBO
+    GLuint normalbuffer;
+    glGenBuffers(1, &normalbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+        2,                  // attribute
+        3,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+    );
+    glEnableVertexAttribArray(2);
+
+    // Generate a buffer for the indices as well
+    GLuint elementbuffer;
+    glGenBuffers(1, &elementbuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
+
+    buffers.element = elementbuffer;
+    buffers.vertex = vertexbuffer;
+    buffers.uv = uvbuffer;
+    buffers.normal = normalbuffer;
+    buffers.vao = vao;
+
+}
+
+
+// MISCELLANOUS: fonctions de génération de plan (vertices, triangles)
+void generateVertices(std::vector<glm::vec3> &indexed_vertices, std::vector<glm::vec2> &uv, int w, int h, glm::vec3 pos, int res){
+    float current_x, current_y;
+    float x_step = (float) w / ((float) res -1);
+    float y_step = (float) h / ((float) res -1);
+
+    int array_index;
+    glm::vec3 vert;
+
+    for(unsigned short i = 0; i < res; i ++){
+        current_x = i * x_step;
+
+        for(unsigned short j = 0; j < res; j ++) {
+            array_index = (i * res + j);
+            current_y = j*y_step;
+
+            vert = glm::vec3(pos.x-((float) w/2), pos.y-((float) h/2), 0) + glm::vec3(current_x, current_y, 0);       // CENTERING VERTICES
+            uv.resize(uv.size() + 1);
+            uv[array_index] = glm::vec2((float) i/ (float) res, (float) j/ (float)res);
+            
+            indexed_vertices.resize(indexed_vertices.size() + 1);
+            indexed_vertices[array_index] = vert;
+
+        }
+    }
+}
+
+void Mesh::generatePlan(int w, int h, glm::vec3 pos, int res) {
+    // int res_x = 16;       //16x16 vertices
+    // int res_y = 16;       //16x16 vertices
+    triangles.clear();
+    vertices.clear();
+    uv.clear();
+
+    int array_index;
+    int tr_index = 0;
+
+    generateVertices(vertices, uv, w, h, pos, res);
+
+    
+    for(unsigned short i = 0; i < res - 1; i ++){
+        for(unsigned short j = 0; j < res - 1; j ++) {
+
+            array_index = (i * res + j);
+            
+            triangles.resize(triangles.size() + 2);
+            triangles[tr_index].resize(3);
+            triangles[tr_index][0] = array_index; 
+            triangles[tr_index][1] = array_index + 1; 
+            triangles[tr_index][2] = array_index + res; 
+            
+            triangles[tr_index + 1].resize(3);
+            triangles[tr_index + 1][0] = array_index + res;
+            triangles[tr_index + 1][1] = array_index + 1;
+            triangles[tr_index + 1][2] = array_index + 1 + res;
+
+            tr_index += 2; 
+
+        }
+    }
+
+    compute_indices();
+}
+
+glm::vec3 get_grid_indexes(glm::vec3 vertex, float min, float step)
+{
+    glm::vec3 result;
+    int j = (vertex[0] - min)/step;
+    int k = (vertex[1] - min)/step;
+    int i = (vertex[2] - min)/step;
+    result = glm::vec3(i, j, k);
+    return result;
+}
+
+struct rep
+{
+    glm::vec3 pos;
+    glm::vec3 normal;
+    int size;
+};
+
+Mesh Mesh::simplify(int res, Mesh input)
+{
+    std::vector<glm::vec3> input_vert = input.vertices;
+    std::vector<std::vector<unsigned short>> input_triangles = input.triangles;
+    
+    int input_sz = input_vert.size();
+    int input_tri_sz = input_triangles.size();
+
+    std::vector<glm::vec3> C;
+    C.resize(8);
+
+    float minVal = FLT_MAX;
+    float minX = FLT_MAX;
+    float minY = FLT_MAX;
+    float minZ = FLT_MAX;
+
+    float maxVal = 0;
+    float maxX = 0;
+    float maxY = 0;
+    float maxZ = 0;
+
+    // Calcul de la bounding box
+    for(size_t i = 0; i < input_sz; i ++) {
+        minX = std::min(minX, input_vert[i][0]);
+        minY = std::min(minY, input_vert[i][1]);
+        minZ = std::min(minZ, input_vert[i][2]);
+
+        maxX = std::max(maxX, input_vert[i][0]);
+        maxY = std::max(maxY, input_vert[i][1]);
+        maxZ = std::max(maxZ, input_vert[i][2]);
+    }
+    
+    minVal = std::min(minX, minY);
+    minVal = std::min(minZ, minVal);
+
+    maxVal = std::max(maxX, maxY);
+    maxVal = std::max(maxZ, maxVal);
+
+    maxVal += 0.05;
+    minVal -= 0.05;
+    
+    C[0] = glm::vec3(minVal, minVal, minVal);
+    C[1] = glm::vec3(minVal, maxVal, minVal);
+    C[2] = glm::vec3(maxVal, maxVal, minVal);
+    C[3] = glm::vec3(maxVal, minVal, minVal);
+
+    C[4] = glm::vec3(minVal, minVal, maxVal);
+    C[5] = glm::vec3(minVal, maxVal, maxVal);
+    C[6] = glm::vec3(maxVal, maxVal, maxVal);
+    C[7] = glm::vec3(maxVal, minVal, maxVal);
+
+    std::vector<rep> repr_grid;
+    repr_grid.resize(res * res * res);
+
+    float step = (maxVal - minVal) / (float) (res - 1);
+
+    // Construction de la grille des cellules des représentants
+    for(size_t i = 0; i < res; i ++) {
+        for(size_t j = 0; j < res; j ++) { 
+            for(size_t k = 0; k < res; k ++) {  
+
+                // Tableau 3D applati
+                repr_grid[i*(res*res) + j*res + k].pos = glm::vec3(0., 0., 0.);
+                repr_grid[i*(res*res) + j*res + k].size = 0;
+
+            }
+        }
+    }  
+
+    glm::vec3 grid_indexes;
+    int grid_index;
+    for(size_t i = 0; i < input_sz; i ++) {
+        // Stockage des coordonées i,j,k de la grille pour obtenir le représentant de i
+        grid_indexes = get_grid_indexes(input_vert[i], minVal, step);
+        grid_index = (grid_indexes[0]*res*res) + (grid_indexes[1] * res) + grid_indexes[2];
+        
+        // Ajout du sommet courant a son représentant
+        repr_grid[grid_index].pos += input_vert[i];
+        repr_grid[grid_index].size += 1;
+
+    }
+    
+    // Liste des représentants non nuls
+    // repr.clear();
+    // repr.resize(grid.size());
+    
+    std::vector<glm::vec3> repr;
+    repr.resize(repr_grid.size());
+    int insert_at = 0;
+    // Stockage des représentants calculés dans repr (moyenne des sommets dans une même cellule)
+    for(rep r : repr_grid)
+    {
+        if(r.size > 0)
+        {
+            repr[insert_at] = r.pos / (float) r.size;
+        }
+        insert_at ++;
+    }
+
+    // Liste des triangles re-indexés (survivants)
+    // std::vector< Triangle > surv; 
+    std::vector<std::vector<unsigned short>> alive;
+    std::vector<unsigned short> surv;
+    surv.resize(3);
+    glm::vec3 vert;
+    int tri_index = 0;
+    // Sélection des triangles à conserver
+    for(std::vector<unsigned short> tri : input_triangles)
+    {
+        std::vector<int> repr_index;
+        repr_index.clear();
+        repr_index.resize(3);
+        bool delete_t = false;
+
+        for(int i = 0; i < 3; i ++)
+        {
+            vert = input_vert[tri[i]];
+            grid_indexes = get_grid_indexes(vert, minVal, step);
+            grid_index = (grid_indexes[0]*res*res) + (grid_indexes[1] * res) + grid_indexes[2];
+
+            //cellule du représentant de vert dans le triangle tri
+            repr_index[i] = grid_index;        
+        }
+
+
+        for(int i = 0; i < 3; i ++)
+        {
+           int comp_index = repr_index[i];
+            for(int k = 0; k < 3; k ++)
+            {
+                if(comp_index == repr_index[k] && i != k)
+                    delete_t = true;
+            }   
+        }
+
+        if(delete_t)
+        {
+            // Elimination du triangle i
+            for(int k = 0; k < 3; k ++)
+                input_triangles[tri_index][k] = -1;
+            
+        }
+        else
+        {
+            // Ré-indexer les sommets du triangle 
+            for(int k = 0; k < 3; k ++){
+                surv[k] = repr_index[k];
+            }
+            alive.push_back(surv);
+        }
+        tri_index ++;
+    }
+
+    // triangles = alive;
+    // vertices = repr;
+    return Mesh(repr, alive);
+}
+
