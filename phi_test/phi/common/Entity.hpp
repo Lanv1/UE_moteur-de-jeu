@@ -132,5 +132,7 @@ class Entity {
         void setName(char*);
 
         Mesh& getMesh();
+
+        
 };
 #endif

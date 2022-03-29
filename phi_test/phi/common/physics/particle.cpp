@@ -25,37 +25,49 @@ float Particle::getBounce()
 Particle::Particle()
 {
     friction = 0.95f;
-    gravity = glm::vec3(0.0f, -9.82f, 0.0f);
+    gravity = glm::vec3(0.0f, -9.82f, 0.0f); //terre
+    // gravity = glm::vec3(0.0f, -1.62f, 0.0f); //lune
     mass = 1.0f;
     bounce = 0.7f;
+    state = MOVING;
 }
 
-void Particle::solveConstraints(std::vector<AABB>& constraints)
+void Particle::solveConstraints(std::vector<AABB*>& constraints)
 {
 
-    for(AABB bb : constraints)
+    for(AABB* bb : constraints)
     {
         Line traveled(oldPosition, position);
         Ray ray;
         // std::cout<<traveled.sqLen()<<std::endl;
 
-        if(lineTest(bb, traveled))
+        if(lineTest(*bb, traveled))
         {
             glm::vec3 dir = glm::normalize(velocity);
-            Ray ray(oldPosition, position);
+            Ray ray(oldPosition, dir);
             RayIntersection intersection;
-
-            if(rayCast(bb, ray, &intersection) > 0)
+            // std::cout<<"RAY CREATED: ORIGIN "<<ray.origin.x<<", "<<ray.origin.y<<", "<<ray.origin.z<<std::endl;
+            // std::cout<<"RAY CREATED: DIRECTION "<<ray.direction.x<<", "<<ray.direction.y<<", "<<ray.direction.z<<std::endl;
+            if(rayCast(*bb, ray, &intersection))
             {
-                std::cout<<"INTERSECTING A BB "<<intersection.t<<std::endl;
-                position = intersection.point + intersection.normal * 0.002f;   //permet à la particule de rouler
+                float moving = glm::dot(position - oldPosition, position - oldPosition);
+                if(moving < 0.0001f)
+                {
+                    state = SLEEPING;
+                    std::cout<<"FIRE CONTACT REPOS"<<std::endl;
+                }
+
+                state = MOVING;
+                position = intersection.point + intersection.normal * 0.002f;  
                 glm::vec3 vn = intersection.normal * glm::dot(intersection.normal, velocity);   // décomposition en parallèle et perpendiculaire 
                 glm::vec3 vt = velocity - vn;
-                std::cout<<"Intersection point: "<<intersection.point.x<<", "<<intersection.point.y<<", "<<intersection.point.z<<std::endl;
                 oldPosition = position;
-                // velocity = glm::vec3(0., 0., 0.);
+                
+                velocity = vt - (vn * bounce);
 
-                velocity = vt - vn * bounce;
+  
+
+
             }
         }
     }
@@ -63,20 +75,27 @@ void Particle::solveConstraints(std::vector<AABB>& constraints)
 }
 
 void Particle::applyForces() {
+    
     //Basique pour le moment (somme des forces appliquées sur la particule)
-    forces = gravity;
+    forces = gravity * mass;
+
 }
 
 void Particle::update(float deltaT)
 {
+
     oldPosition = position;
     // A = F / M
     glm::vec3 acceleration = forces * (1.0f / mass);
 
+    glm::vec3 oldVelocity = velocity;   
     // V = V + A*dT (+ paramètre de friction)
     velocity = velocity * friction + acceleration * deltaT;
 
-    position = position + velocity * deltaT;
+    // position = position + velocity * deltaT;
+    position = position + (oldVelocity + velocity) * 0.5f * deltaT; // verlet integration (plus précis)
+    
+
 }
 
 //test

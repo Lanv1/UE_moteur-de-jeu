@@ -81,15 +81,17 @@ struct Triangle{
 
 //Axis Aligned bounding box
 struct AABB{
+    glm::vec3 base_origin;
+    glm::vec3 base_extents;
     glm::vec3 origin;
     glm::vec3 extents;
 
-    AABB(): origin(glm::vec3(0,0,0)), extents(glm::vec3(1,1,1)){}
+    AABB(): base_origin(glm::vec3(0,0,0)), base_extents(glm::vec3(1,1,1)), origin(glm::vec3(0,0,0)), extents(glm::vec3(1,1,1)){}
 
     // construction d'une bounding box à partir d'un point min et max
     AABB(glm::vec3 min, glm::vec3 max){
-        origin = 0.5f * (min + max);
-        extents = 0.5f * (max - min);
+        base_origin = 0.5f * (min + max);
+        base_extents = 0.5f * (max - min);
     }
 
     glm::vec3 getMin(){
@@ -112,6 +114,21 @@ struct AABB{
             fmaxf(p1.y, p2.y),
             fmaxf(p1.z, p2.z)
         ); 
+    }
+
+    void applyTransformation(glm::mat4 transform)
+    {
+
+        // std::cout<<"ORIGIN: "<<origin.x<<", "<<origin.y<<", "<<origin.z<<std::endl;
+        glm::vec4 resultOrigin(base_origin, 1);          // multiplication d'une matrice avec un point
+        glm::vec4 resultExtents(base_extents, 0);        // multiplication d'une matrice avec un vecteur
+
+        resultOrigin =  transform * resultOrigin;
+        resultExtents = transform * resultExtents;
+        // std::cout<<"ORIGIN CHANGED ,?: "<<resultOrigin.x<<", "<<resultOrigin.y<<", "<<resultOrigin.z<<std::endl;
+
+        origin = glm::vec3(resultOrigin.x, resultOrigin.y, resultOrigin.z);
+        extents = glm::vec3(resultExtents.x, resultExtents.y, resultExtents.z);
     }
 
 };
@@ -152,6 +169,7 @@ class Mesh{
         void compute_boundingBox(); 
 
         static Mesh simplify(int, Mesh);
+
         
 };
 

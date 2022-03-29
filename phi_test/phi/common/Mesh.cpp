@@ -165,6 +165,12 @@ void Mesh::renderBbox()
     box_vert.push_back(min + glm::vec3(xyz.x, xyz.y, xyz.z));
     box_vert.push_back(min + glm::vec3(0, xyz.y, xyz.z));
 
+    // for(glm::vec3 vert : box_vert)
+    // {
+    //     std::cout<<vert.x<<", "<<vert.y<<", "<<vert.z<<std::endl;
+    // }
+    // std::cout<<std::endl;
+
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -185,7 +191,6 @@ void Mesh::renderBbox()
 
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glDrawArrays(GL_POINTS, 0, 8);
-
 
     
 }

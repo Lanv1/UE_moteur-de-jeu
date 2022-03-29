@@ -16,7 +16,10 @@ struct Ray
     glm::vec3 origin;
     glm::vec3 direction;
     Ray(){}
-    Ray(glm::vec3 o, glm::vec3 d): origin(o), direction(d){}
+    Ray(glm::vec3& o, glm::vec3& d): origin(o)
+    {
+        direction = glm::normalize(d);
+    }
 };
 
 struct Line
@@ -44,7 +47,7 @@ struct RayIntersection
 
 float rayCast(AABB& aabb, const Ray& ray);
 
-float rayCast(AABB& aabb, const Ray& ray, RayIntersection* intersection);
+bool rayCast(AABB& aabb, const Ray& ray, RayIntersection* intersection);
 
 bool lineTest(AABB& aabb, Line line);
 

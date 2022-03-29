@@ -53,7 +53,7 @@ float rayCast(AABB& aabb, const Ray& ray)
          
 }
 
-float rayCast( AABB& aabb, const Ray& ray, RayIntersection* intersection)
+bool rayCast( AABB& aabb, const Ray& ray, RayIntersection* intersection)
 {
     //Cyrus-Beck clipping
     glm::vec3 min = aabb.getMin();
@@ -61,13 +61,14 @@ float rayCast( AABB& aabb, const Ray& ray, RayIntersection* intersection)
 
     float t[6] = {0};
 
-    //intersections possibles
-    t[0] = (min.x - ray.origin.x) / ray.direction.x;
-    t[1] = (max.x - ray.origin.x) / ray.direction.x;
-    t[2] = (min.y - ray.origin.y) / ray.direction.y;
-    t[3] = (max.y - ray.origin.y) / ray.direction.y;
-    t[4] = (min.z - ray.origin.z) / ray.direction.z;
-    t[5] = (max.z - ray.origin.z) / ray.direction.z;
+    //intersections possibles (eviter les divisions par 0 (remplacer 0 par un epsilon))
+    t[0] = (min.x - ray.origin.x) / (CMP(ray.direction.x, 0.0f) ? 0.00001f : ray.direction.x);
+    t[1] = (max.x - ray.origin.x) / (CMP(ray.direction.x, 0.0f) ? 0.00001f : ray.direction.x);
+    t[2] = (min.y - ray.origin.y) / (CMP(ray.direction.y, 0.0f) ? 0.00001f : ray.direction.y);
+    t[3] = (max.y - ray.origin.y) / (CMP(ray.direction.y, 0.0f) ? 0.00001f : ray.direction.y);
+    t[4] = (min.z - ray.origin.z) / (CMP(ray.direction.z, 0.0f) ? 0.00001f : ray.direction.z);
+    t[5] = (max.z - ray.origin.z) / (CMP(ray.direction.z, 0.0f) ? 0.00001f : ray.direction.z);;
+
 
     float tmin = fmaxf(
                     fmaxf(
@@ -87,14 +88,15 @@ float rayCast( AABB& aabb, const Ray& ray, RayIntersection* intersection)
 
     if(tmax < 0)
     {
+
         // objet exactement derrière l'origine du ray
-        return -1;
+        return false;
     }
 
     if(tmin > tmax)
     {
         //pas d'intersection
-        return -1;
+        return false;
     }
 
     float t_result = tmin;
@@ -109,7 +111,6 @@ float rayCast( AABB& aabb, const Ray& ray, RayIntersection* intersection)
     intersection->hit = true;
     intersection->point = ray.origin + t_result * ray.direction;
 
-    std::cout<<"DANS RAYCAST PT INTER "<<intersection->point.x<<", "<<intersection->point.y<<", "<<intersection->point.z<<std::endl;
     
     //normales de la bounding box
     glm::vec3 normals[] = {
@@ -122,11 +123,12 @@ float rayCast( AABB& aabb, const Ray& ray, RayIntersection* intersection)
     {
         if(CMP(t[i], t_result))
         {
-            intersection->normal = normals[i];
+
+            intersection->normal = normals[3];
         }
     }
 
-    return 1;
+    return true;
 
          
 }
