@@ -242,6 +242,10 @@ int main( void )
         particle.applyForces();
         particle.update(deltaTime);
         particle.solveConstraints(constraints);
+        // if(particle.state == 1)
+        // {
+
+        // }
         particle.render();
         
         // caméra libre

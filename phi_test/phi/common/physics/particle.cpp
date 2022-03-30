@@ -35,42 +35,43 @@ Particle::Particle()
 void Particle::solveConstraints(std::vector<AABB*>& constraints)
 {
 
+    float sleeping_treshold = 0.0001f;
+
     for(AABB* bb : constraints)
     {
         Line traveled(oldPosition, position);
         Ray ray;
-        // std::cout<<traveled.sqLen()<<std::endl;
 
         if(lineTest(*bb, traveled))
         {
             glm::vec3 dir = glm::normalize(velocity);
             Ray ray(oldPosition, dir);
             RayIntersection intersection;
-            // std::cout<<"RAY CREATED: ORIGIN "<<ray.origin.x<<", "<<ray.origin.y<<", "<<ray.origin.z<<std::endl;
-            // std::cout<<"RAY CREATED: DIRECTION "<<ray.direction.x<<", "<<ray.direction.y<<", "<<ray.direction.z<<std::endl;
+
             if(rayCast(*bb, ray, &intersection))
             {
-                float moving = glm::dot(position - oldPosition, position - oldPosition);
-                if(moving < 0.0001f)
+                position = intersection.point + intersection.normal * 0.003f;
+
+                // Etat contact au repos pour rendre la particule stable lorsqu'elle est au contact de sa contrainte.
+                if(traveled.sqLen() < sleeping_treshold || position == oldPosition)
                 {
                     state = SLEEPING;
-                    std::cout<<"FIRE CONTACT REPOS"<<std::endl;
                 }
-
-                state = MOVING;
-                position = intersection.point + intersection.normal * 0.002f;  
-                glm::vec3 vn = intersection.normal * glm::dot(intersection.normal, velocity);   // décomposition en parallèle et perpendiculaire 
-                glm::vec3 vt = velocity - vn;
-                oldPosition = position;
-                
-                velocity = vt - (vn * bounce);
-
-  
-
-
+                else
+                {
+                    glm::vec3 vn = intersection.normal * glm::dot(intersection.normal, velocity);   // décomposition en parallèle et perpendiculaire 
+                    glm::vec3 vt = velocity - vn;
+                    oldPosition = position;
+                    velocity = vt - (vn * bounce);
+                }
             }
         }
+        else
+        {
+            state = MOVING; //pas de collision
+        }
     }
+
 
 }
 
@@ -84,23 +85,32 @@ void Particle::applyForces() {
 void Particle::update(float deltaT)
 {
 
-    oldPosition = position;
-    // A = F / M
-    glm::vec3 acceleration = forces * (1.0f / mass);
+    if(state == MOVING)
+    {
 
-    glm::vec3 oldVelocity = velocity;   
-    // V = V + A*dT (+ paramètre de friction)
-    velocity = velocity * friction + acceleration * deltaT;
+        oldPosition = position;
 
-    // position = position + velocity * deltaT;
-    position = position + (oldVelocity + velocity) * 0.5f * deltaT; // verlet integration (plus précis)
-    
+        // A = F / M
+        glm::vec3 acceleration = forces * (1.0f / mass);
+
+        glm::vec3 oldVelocity = velocity;   
+        // V = V + A*dT (+ paramètre de friction)
+        velocity = velocity * friction + acceleration * deltaT;
+
+        // position = position + velocity * deltaT;                     //Euler integration (basique)
+        position = position + (oldVelocity + velocity) * 0.5f * deltaT; // verlet integration (plus précis)
+        
+    }
+
 
 }
 
 //test
 void Particle::render()
 {
+    //render une unique particule pour le moment
+
+
     float single_pt[3] = {position.x, position.y, position.z}; 
 
     GLuint vao;
