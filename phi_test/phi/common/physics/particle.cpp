@@ -55,7 +55,8 @@ void Particle::solveConstraints(std::vector<AABB*>& constraints)
                 // Etat contact au repos pour rendre la particule stable lorsqu'elle est au contact de sa contrainte.
                 if(traveled.sqLen() < sleeping_treshold || position == oldPosition)
                 {
-                    state = SLEEPING;
+                    state = SLEEPING;   //si la particule est mise dans l'état repos avec la contrainte courante, ne pas tester les autres contraintes.
+                    return; 
                 }
                 else
                 {
@@ -100,8 +101,8 @@ void Particle::update(float deltaT)
         // position = position + velocity * deltaT;                     //Euler integration (basique)
         position = position + (oldVelocity + velocity) * 0.5f * deltaT; // verlet integration (plus précis)
         
-    }
 
+    }
 
 }
 
@@ -109,8 +110,6 @@ void Particle::update(float deltaT)
 void Particle::render()
 {
     //render une unique particule pour le moment
-
-
     float single_pt[3] = {position.x, position.y, position.z}; 
 
     GLuint vao;

@@ -154,6 +154,9 @@ int main( void )
     terrain.compute_boundingBox();
     terrain.initBuffers();
 
+    terrain_entity.transform.rot.x = 90;
+    terrain_entity.updateSelfAndChild();
+
     camera_position += vec3(0, terrain_size/5, terrain_size);
 
 
@@ -162,14 +165,7 @@ int main( void )
     std::vector<AABB*> constraints;
     // constraints.push_back(terrain.boundingBox);
     particle.setPosition(glm::vec3(0, 1, 0));
-    particle.applyForces();
 
-    std::cout<<"Alors ça bounce ?"<<particle.getBounce()<<std::endl;
-    // terrain.renderBbox();
-
-    // terrain_entity.transform.setLocalPosition(glm::vec3(0, -1, 0));
-    terrain_entity.transform.rot.x = 90;
-    terrain_entity.updateSelfAndChild();
 
     // // MESH LOADED
     Mesh ball(indexed_vertices, triangles, vert_uv);
@@ -185,6 +181,7 @@ int main( void )
     ball_entity.transform.scale = glm::vec3(0.2, 0.2, 0.2);
     ball_entity.updateSelfAndChild();
 
+    //Particle == point (pas de volume).
     glPointSize(30);
 
     // For speed computation
@@ -208,46 +205,48 @@ int main( void )
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //MODEL
-        // glm::mat4 Model = terrain_entity.transform.modelMatrix;
         ball_entity.transform.setLocalPosition(ball_translation);
+        ball_entity.transform.rot.z = rota_speed;
         ball_entity.updateSelfAndChild();
         glm::mat4 Model = ball_entity.transform.modelMatrix;
-
         ball.boundingBox.applyTransformation(Model);
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(bbox_handle, 0);
         ball.draw();
         glUniform1i(bbox_handle, 1);
-
         Model = glm::mat4(1.f);
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         ball.renderBbox();
 
+
+        //TERRAIN
         Model = terrain_entity.transform.modelMatrix;
         terrain.boundingBox.applyTransformation(Model);
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(bbox_handle, 0);
         terrain.draw();
-
         glUniform1i(bbox_handle, 1);
         Model = glm::mat4(1.f);
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         terrain.renderBbox();
 
 
-        // Model = glm::mat4(1.f);
+        //PARTICLE
+        Model = glm::mat4(1.f);
         glUniformMatrix4fv(model_handle, 1, GL_FALSE, &Model[0][0]);
         glUniform1i(bbox_handle, 0);
 
         particle.applyForces();
         particle.update(deltaTime);
         particle.solveConstraints(constraints);
-        // if(particle.state == 1)
-        // {
-
-        // }
         particle.render();
-        
+
+        glm::vec3 particle_pos = particle.getPosition();
+        // std::cout<<"particle pos: "<<particle_pos.x<<", "<<particle_pos.y<<", "<<particle_pos.z<<std::endl;
+        if(particle.state == 0)
+        {
+            particle.setPosition(glm::vec3(0., 1., 0.));    //loop particle
+        }
         // caméra libre
         glm::mat4 View;
         glm::vec3 dir;
