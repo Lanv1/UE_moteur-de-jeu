@@ -1,12 +1,7 @@
 # HAI819I moteur
 
-> ./reset_dir.sh 
-
-> cd build
-
-> make -j 
->
-> ./launch-TP#.sh
+## Contenu
+Ce dépot contient les différents travaux pratiques effectués au 2nd semstre du master 1 **IMAGINE** 
 
 
 
