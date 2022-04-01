@@ -18,7 +18,7 @@
 
 |                      Heightmap_Mountain                      |                       Heightmap_Rocky                        |                     heightmap-1024x1024                      |
 | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| ![](/home/spon/M1/S2/hai819i-moteur/TP2/screens/Capture d’écran de 2022-02-16 17-31-51.png) | ![](/home/spon/M1/S2/hai819i-moteur/TP2/screens/Capture d’écran de 2022-02-16 17-29-59.png) | ![](/home/spon/M1/S2/hai819i-moteur/TP2/screens/Capture d’écran de 2022-02-16 17-31-15.png) |
+| ![](./screens/s1.png) | ![](./screens/s2.png) | ![](screens/s3.png) |
 
 
 
